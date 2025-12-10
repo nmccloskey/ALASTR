@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elasticas"
+version = "0.0.1"
+description = "Extensive Linguistic Analysis of Speech Transcripts In Clinical Aphasiology & SLP (Speech-Language Pathology)"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Nick McCloskey" }]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "contractions==0.1.73",
+    "nltk>=3.9.1",
+    "num2words>=0.5.14",
+    "numpy==1.26.4",
+    "pandas>=2.0.3",
+    "pyenchant==3.2.2",
+    "pylangacq==0.19.1",
+    "PyYAML>=6.0.2",
+    "tqdm>=4.67.1",
+    "openpyxl>=3.1.5",
+    "streamlit>=1.45.1",
+    "scipy>=1.16.0",
+    "xlsxwriter>=3.2.5",
+]
+
+[project.scripts]
+rascal = "rascal.cli:main"
+streamlit_rascal = "webapp.streamlit_app:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
