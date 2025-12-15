@@ -17,24 +17,55 @@ classifiers = [
 ]
 
 dependencies = [
-    "contractions==0.1.73",
-    "nltk>=3.9.1",
-    "num2words>=0.5.14",
-    "numpy==1.26.4",
-    "pandas>=2.0.3",
-    "pyenchant==3.2.2",
-    "pylangacq==0.19.1",
-    "PyYAML>=6.0.2",
-    "tqdm>=4.67.1",
-    "openpyxl>=3.1.5",
-    "streamlit>=1.45.1",
-    "scipy>=1.16.0",
-    "xlsxwriter>=3.2.5",
+  # Core NLP / linguistics
+  "spacy>=3.8,<4.0",
+  "nltk>=3.9,<4.0",
+  "benepar>=0.2,<0.3",
+  "textblob>=0.19,<0.20",
+  "afinn>=0.1,<1.0",
+  "vaderSentiment>=3.3,<4.0",
+  "NRCLex>=3.0,<4.0",
+  "lexicalrichness>=0.5,<1.0",
+  "inflect>=7.5,<8.0",
+  "wordfreq>=3.1,<4.0",
+  "pylangacq>=0.19,<1.0",
+  "segments>=2.2,<3.0",
+  "g2p-en>=2.1.0",
+  "language_tool_python>=2.9,<3.0",
+
+  # Data / stats
+  "numpy>=1.23,<1.28",
+  "pandas>=2.2,<2.3",
+  "scipy>=1.10.1",
+  "scikit-learn>=1.6,<1.7",
+
+  # Trees / distances
+  "editdistance>=0.8,<0.9",
+  "zss>=1.2,<1.3",
+  "Distance>=0.1,<0.2",
+  "dendropy>=5.0,<6.0",
+  "munkres>=1.1,<1.2",
+
+  # I/O / formatting
+  "openpyxl>=3.1,<3.2",
+  "PyPDF2>=3.0,<3.1",
+  "docx2txt>=0.8,<1.0",
+  "tabulate>=0.9,<1.0",
+  "bibtexparser>=2.0.0b8,<3.0",
+  "markdown>=3.7,<4.0",
+  "markdown-it-py>=3.0,<4.0",
+  "PyYAML>=6.0,<7.0",
+
+  # CLI / utilities
+  "typer>=0.15,<1.0",
+  "requests>=2.32,<3.0",
+  "colorlog>=6.9,<7.0",
+  "tqdm>=4.67,<5.0",
 ]
 
 [project.scripts]
-rascal = "rascal.cli:main"
-streamlit_rascal = "webapp.streamlit_app:main"
+elasticas = "elasticas.cli:main"
+streamlit_elasticas = "webapp.streamlit_app:main"
 
 [project.optional-dependencies]
 

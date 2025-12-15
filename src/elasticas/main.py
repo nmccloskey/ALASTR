@@ -1,7 +1,7 @@
 from tqdm import tqdm
-from backend.utils.logger import logger
-from backend.etl.OutputManager import OutputManager
-from  elasticas.utils.PipelineManager import PipelineManager
+from elasticas.backend.utils.logger import logger
+from elasticas.backend.etl.OutputManager import OutputManager
+from elasticas.utils.PipelineManager import PipelineManager
 
 
 def main():
