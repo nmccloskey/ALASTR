@@ -4,12 +4,12 @@ import pandas as pd
 from datetime import datetime
 import logging
 logger = logging.getLogger("CustomLogger")
-from backend.utils.logger import logger, configure_file_handler
-from backend.utils.Tier import TierManager
-from backend.eda.EDADaemon import EDADaemon
-from backend.etl.SQLDaemon import SQLDaemon
-from backend.etl.Table import Table
-from backend.eda.visualization import visualize_distinctive_features, generate_corr_maps, generate_data_heatmaps
+from elasticas.backend.utils.logger import logger, configure_file_handler
+from elasticas.backend.utils.Tier import TierManager
+from elasticas.backend.eda.EDADaemon import EDADaemon
+from elasticas.backend.etl.SQLDaemon import SQLDaemon
+from elasticas.backend.etl.Table import Table
+from elasticas.backend.eda.visualization import visualize_distinctive_features, generate_corr_maps, generate_data_heatmaps
 
 
 class OutputManager:
