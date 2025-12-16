@@ -28,7 +28,7 @@ class Table:
         self.pivot = pivot
         
     def get_subdir(self):
-        """Retrieve subfolder(s) within \section."""
+        r"""Retrieve subfolder(s) within \section."""
         return self.subdir
 
     def get_file_path(self):

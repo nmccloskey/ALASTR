@@ -5,9 +5,9 @@ from tqdm import tqdm
 import logging
 from pathlib import Path
 logger = logging.getLogger("CustomLogger")
-from backend.nlp.NLPmodel import NLPmodel
-from backend.etl.OutputManager import OutputManager
-from backend.nlp.data_processing import scrub_raw_text, clean_text, get_text_from_cha, get_two_cha_versions
+from elasticas.backend.nlp.NLPmodel import NLPmodel
+from elasticas.backend.etl.OutputManager import OutputManager
+from elasticas.backend.nlp.data_processing import scrub_raw_text, clean_text, get_text_from_cha, get_two_cha_versions
 
 def process_sents(doc, sample_data, is_cha=False):
     doc_id = sample_data["doc_id"]

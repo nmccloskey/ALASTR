@@ -2,11 +2,12 @@ import numpy as np
 from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
-from backend.nlp.NLPmodel import NLPmodel
+from elasticas.backend.nlp.NLPmodel import NLPmodel
 from lexicalrichness import LexicalRichness
 from wordfreq import word_frequency, zipf_frequency
-from backend.nlp.data_processing import get_most_common
-from readability import Readability
+from elasticas.backend.nlp.data_processing import get_most_common
+# from readability import Readability
+import readability as Readability
 import textstat as tx
 from elasticas.analyses.ngrams import compute_ngrams
 

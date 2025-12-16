@@ -1,17 +1,15 @@
 import os
 import logging
 logger = logging.getLogger("CustomLogger")
-# from clatr.utils.OutputManager import OutputManager
-from infoscopy.utils.OutputManager import OutputManager
-# from clatr.data.preprocessing import preprocess_text
-from infoscopy.nlp_utils.preprocessing import preprocess_text
-from clatr.analyses.graphemes import analyze_graphemes
-from clatr.analyses.lexicon import analyze_lexicon
-from clatr.analyses.morphology import analyze_morphology
-from clatr.analyses.syntax import analyze_syntax
-from clatr.analyses.phonology import analyze_phonology
-from clatr.analyses.semantics import analyze_semantics
-from clatr.analyses.mechanics import analyze_mechanics
+from elasticas.backend.etl.OutputManager import OutputManager
+from elasticas.backend.nlp.preprocessing import preprocess_text
+from elasticas.analyses.graphemes import analyze_graphemes
+from elasticas.analyses.lexicon import analyze_lexicon
+from elasticas.analyses.morphology import analyze_morphology
+from elasticas.analyses.syntax import analyze_syntax
+from elasticas.analyses.phonology import analyze_phonology
+from elasticas.analyses.semantics import analyze_semantics
+from elasticas.analyses.mechanics import analyze_mechanics
 
 OM = OutputManager()
 ngrams = OM.config.get("ngrams", 5)

@@ -2,7 +2,7 @@ import re
 from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
-from backend.nlp.data_processing import calc_props, get_most_common
+from elasticas.backend.nlp.data_processing import calc_props, get_most_common
 from elasticas.analyses.ngrams import compute_ngrams
 
 
