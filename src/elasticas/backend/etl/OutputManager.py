@@ -4,8 +4,8 @@ import pandas as pd
 from datetime import datetime
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.utils.logger import logger, configure_file_handler
-from elasticas.backend.utils.Tier import TierManager
+from elasticas.backend.tools.logger import logger, configure_file_handler
+from elasticas.backend.tools.Tier import TierManager
 from elasticas.backend.eda.EDADaemon import EDADaemon
 from elasticas.backend.etl.SQLDaemon import SQLDaemon
 from elasticas.backend.etl.Table import Table

@@ -1,5 +1,5 @@
 from tqdm import tqdm
-from elasticas.backend.utils.logger import logger
+from elasticas.backend.tools.logger import logger
 from elasticas.backend.etl.OutputManager import OutputManager
 from elasticas.utils.PipelineManager import PipelineManager
 
