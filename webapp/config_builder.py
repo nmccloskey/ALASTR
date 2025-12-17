@@ -5,15 +5,15 @@ import sys
 import tempfile
 import zipfile
 from io import BytesIO
-from config_builder import build_config_ui  # Make sure this supports CLATR's schema
+from config_builder import build_config_ui  # Make sure this supports ALASTR's schema
 
 def add_src_to_sys_path():
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 add_src_to_sys_path()
 
-from src.clatr.main import run_clatr_pipeline  # Adapt this import based on your structure
+from src.alastr.main import run_alastr_pipeline  # Adapt this import based on your structure
 
-st.title("CLATR Web App")
+st.title("ALASTR Web App")
 
 if "confirmed_config" not in st.session_state:
     st.session_state.confirmed_config = False
@@ -64,16 +64,16 @@ if (config_file or st.session_state.confirmed_config) and cha_files:
             with open(os.path.join(input_dir, file.name), "wb") as f:
                 f.write(file.read())
 
-        if st.button("Run CLATR Pipeline"):
+        if st.button("Run ALASTR Pipeline"):
             try:
-                run_clatr_pipeline(config)  # You can expose a CLI-style `main(config)` or step-by-step logic here
-                st.success("🎉 CLATR pipeline completed!")
+                run_alastr_pipeline(config)  # You can expose a CLI-style `main(config)` or step-by-step logic here
+                st.success("🎉 ALASTR pipeline completed!")
 
                 zip_buffer = zip_folder(output_dir)
                 st.download_button(
                     label="📦 Download Results ZIP",
                     data=zip_buffer,
-                    file_name="clatr_output.zip",
+                    file_name="alastr_output.zip",
                     mime="application/zip"
                 )
             except Exception as e:

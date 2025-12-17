@@ -11,10 +11,10 @@ def add_src_to_sys_path():
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 add_src_to_sys_path()
 
-from src.clatr.main import main as run_clatr_pipeline
+from src.alastr.main import main as run_alastr_pipeline
 
-st.set_page_config(page_title="CLATR Web App", layout="wide")
-st.title("🧠 CLATR Web App: Comprehensive Linguistic Analysis of Text for Research")
+st.set_page_config(page_title="ALASTR Web App", layout="wide")
+st.title("🧠 ALASTR Web App: Comprehensive Linguistic Analysis of Text for Research")
 
 if "confirmed_config" not in st.session_state:
     st.session_state.confirmed_config = False
@@ -63,18 +63,18 @@ if (config_file or st.session_state.confirmed_config) and cha_files:
             with open(os.path.join(input_dir, file.name), "wb") as f:
                 f.write(file.read())
 
-        st.header("Step 3: Run CLATR")
-        if st.button("🚀 Run CLATR Pipeline"):
+        st.header("Step 3: Run ALASTR")
+        if st.button("🚀 Run ALASTR Pipeline"):
             try:
-                run_clatr_pipeline(config)
+                run_alastr_pipeline(config)
                 st.success("🎉 Analysis complete!")
 
                 zip_buffer = zip_folder(output_dir)
                 st.download_button(
                     label="📦 Download Output ZIP",
                     data=zip_buffer,
-                    file_name="clatr_output.zip",
+                    file_name="alastr_output.zip",
                     mime="application/zip"
                 )
             except Exception as e:
-                st.error(f"❌ Error running CLATR: {e}")
+                st.error(f"❌ Error running ALASTR: {e}")

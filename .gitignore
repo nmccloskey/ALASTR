@@ -1,5 +1,5 @@
 # Ignore input and output files
-elasticas_data/
+alastr_data/
 output/
 input/
 database/
@@ -61,7 +61,7 @@ Thumbs.db
 
 # Metadata
 metadata/
-elasticas_metadata.xlsx
+alastr_metadata.xlsx
 
 # Configs
 config.yaml

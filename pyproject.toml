@@ -3,9 +3,9 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "elasticas"
+name = "alastr"
 version = "0.0.1"
-description = "Extensive Linguistic Analysis of Speech Transcripts In Clinical Aphasiology & SLP (Speech-Language Pathology)"
+description = "Aphasiological Language Analysis of Speech Transcripts for Research"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
@@ -64,8 +64,8 @@ dependencies = [
 ]
 
 [project.scripts]
-elasticas = "elasticas.cli:main"
-streamlit_elasticas = "webapp.streamlit_app:main"
+alastr = "alastr.cli:main"
+streamlit_alastr = "webapp.streamlit_app:main"
 
 [project.optional-dependencies]
 
