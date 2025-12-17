@@ -1,12 +1,12 @@
-# ELASTICAS – Extensive Linguistic Analysis of Speech Transcripts in Clinical Aphasiology & SLP (Speech-Language Pathology)
+# ALASTR – Aphasiological Language Analysis of Speech Transcripts for Research
 
 **Status:** Active development (early-stage).  
 **Stability:** APIs, module layout, and CLI interfaces are subject to change.  
 **Audience:** Researchers and clinicians working with clinical aphasiology and SLP discourse data.
 
-ELASTICAS is a Python toolkit for **scalable, scriptable analysis of clinical speech and language transcripts**, with an emphasis on aphasia-focused workflows. It is designed to complement existing CHAT/CLAN-based pipelines by adding reproducible batch processing, richer linguistic feature extraction, and integration with downstream statistical analyses.
+ALASTR is a Python toolkit for **scalable, scriptable analysis of clinical speech and language transcripts**, with an emphasis on aphasia-focused workflows. It is designed to complement existing CHAT/CLAN-based pipelines by adding reproducible batch processing, richer linguistic feature extraction, and integration with downstream statistical analyses.
 
-While ELASTICAS draws on concepts and components piloted in earlier prototypes (e.g., CLATR), it is being developed as the **lab-facing, aphasiology-specialized system**, with a clearer focus on clinical narratives, paraphasias, disfluencies, and other discourse-level phenomena relevant to treatment and outcomes research.
+While ALASTR draws on concepts and components piloted in earlier prototypes (e.g., CLATR), it is being developed as the **lab-facing, aphasiology-specialized system**, with a clearer focus on clinical narratives, paraphasias, disfluencies, and other discourse-level phenomena relevant to treatment and outcomes research.
 
 ---
 
@@ -39,11 +39,11 @@ While ELASTICAS draws on concepts and components piloted in earlier prototypes (
 
 ## Installation (Early Preview)
 
-ELASTICAS is not yet distributed on PyPI. During early development, you can install it from a local clone:
+ALASTR is not yet distributed on PyPI. During early development, you can install it from a local clone:
 
 ```bash
-git clone https://github.com/nmccloskey/ELASTICAS.git
-cd ELASTICAS
+git clone https://github.com/nmccloskey/ALASTR.git
+cd ALASTR
 pip install -e .
 ```
 
@@ -56,7 +56,7 @@ You may wish to create and activate a dedicated virtual environment or conda env
 CLI and API interfaces are still evolving. A minimal example of the intended usage pattern might eventually look like:
 
 ```bash
-elasticas run \
+alastr run \
   --config path/to/config.yaml \
   --input-transcripts path/to/cha/files \
   --output-dir path/to/output
@@ -65,7 +65,7 @@ elasticas run \
 or, in Python:
 
 ```python
-from elasticas.pipeline import run_pipeline
+from alastr.pipeline import run_pipeline
 
 run_pipeline(
     config_path="path/to/config.yaml",
@@ -80,7 +80,7 @@ Exact function names and options are likely to change as the design stabilizes.
 
 ## Project Status and Roadmap
 
-ELASTICAS is **under active development** and not yet recommended for routine clinical or research deployment. Near-term goals include:
+ALASTR is **under active development** and not yet recommended for routine clinical or research deployment. Near-term goals include:
 
 - Stabilizing the package layout and configuration system.
 - Implementing an end-to-end demo pipeline on a small aphasia dataset.
@@ -91,9 +91,9 @@ ELASTICAS is **under active development** and not yet recommended for routine cl
 
 ## Citation and Contributions
 
-A formal citation will be provided once an ELASTICAS methods paper is available. Until then, if you use concepts or code from this repository in academic work, please:
+A formal citation will be provided once an ALASTR methods paper is available. Until then, if you use concepts or code from this repository in academic work, please:
 
 - Cite the GitHub repository URL, and
-- Acknowledge ELASTICAS as an early-stage tool under development.
+- Acknowledge ALASTR as an early-stage tool under development.
 
 Issues, suggestions, and (well-scoped) pull requests are welcome, with the understanding that the codebase is still evolving.
