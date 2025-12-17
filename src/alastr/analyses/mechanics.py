@@ -3,8 +3,8 @@ import language_tool_python
 from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.nlp.NLPmodel import NLPmodel
-from elasticas.backend.nlp.data_processing import get_most_common
+from alastr.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.data_processing import get_most_common
 
 
 def apply_language_tool(doc, num):

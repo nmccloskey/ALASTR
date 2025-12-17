@@ -2,9 +2,9 @@ import numpy as np
 from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.nlp.NLPmodel import NLPmodel
-from elasticas.backend.nlp.data_processing import calc_props, get_most_common
-from elasticas.analyses.ngrams import compute_ngrams
+from alastr.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.data_processing import calc_props, get_most_common
+from alastr.analyses.ngrams import compute_ngrams
 
 
 def estimate_mlu(doc):

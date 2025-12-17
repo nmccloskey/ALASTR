@@ -1,4 +1,4 @@
-from elasticas.backend.etl.OutputManager import OutputManager, SQLDaemon
+from alastr.backend.etl.OutputManager import OutputManager, SQLDaemon
 
 class PipelineManager:
     _instance = None

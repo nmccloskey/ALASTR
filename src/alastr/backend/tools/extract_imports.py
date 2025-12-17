@@ -9,7 +9,7 @@ Extract top-level imported modules from a Python package using AST.
 - Writes a newline-separated list to stdout or a file
 
 Usage:
-  python src/elasticas/backend/tools/extract_imports.py --root src --out requirements.auto.in
+  python src/alastr/backend/tools/extract_imports.py --root src --out requirements.auto.in
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ EXCLUDE_DIRS = {
 
 EXCLUDE_MODULE_PREFIXES = {
     # common local-layout names you might not want treated as external deps
-    "elasticas",
+    "alastr",
 }
 
 

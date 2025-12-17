@@ -2,14 +2,13 @@ import numpy as np
 from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.NLPmodel import NLPmodel
 from lexicalrichness import LexicalRichness
 from wordfreq import word_frequency, zipf_frequency
-from elasticas.backend.nlp.data_processing import get_most_common
-# from readability import Readability
-import readability as Readability
+from alastr.backend.nlp.data_processing import get_most_common
+import readability
 import textstat as tx
-from elasticas.analyses.ngrams import compute_ngrams
+from alastr.analyses.ngrams import compute_ngrams
 
 
 def calculate_frequencies(doc, label):
@@ -192,7 +191,7 @@ def calc_readability(doc):
 
     try:
         func_data = {}
-        r = Readability(doc.text)
+        r = readability(doc.text)
 
         fk = r.flesch_kincaid()
         func_data["flesch_kincaid_score"] = fk.score

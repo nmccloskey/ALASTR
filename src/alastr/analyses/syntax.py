@@ -6,12 +6,12 @@ from collections import Counter
 import logging
 logger = logging.getLogger("CustomLogger")
 from nltk import Tree as nltkTree
-from elasticas.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.NLPmodel import NLPmodel
 from zss import simple_distance, Node
 from dendropy import Tree, TaxonNamespace
 from dendropy.calculate import treecompare
-from elasticas.analyses.morphology import analyze_spacy_features
-from elasticas.backend.eda.visualization import make_spacy_dep_pdfs
+from alastr.analyses.morphology import analyze_spacy_features
+from alastr.backend.eda.visualization import make_spacy_dep_pdfs
 
 
 def compute_tree_height(token):

@@ -4,12 +4,12 @@ import pandas as pd
 from datetime import datetime
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.tools.logger import logger, configure_file_handler
-from elasticas.backend.tools.Tier import TierManager
-from elasticas.backend.eda.EDADaemon import EDADaemon
-from elasticas.backend.etl.SQLDaemon import SQLDaemon
-from elasticas.backend.etl.Table import Table
-from elasticas.backend.eda.visualization import visualize_distinctive_features, generate_corr_maps, generate_data_heatmaps
+from alastr.backend.tools.logger import logger, configure_file_handler
+from alastr.backend.tools.Tier import TierManager
+from alastr.backend.eda.EDADaemon import EDADaemon
+from alastr.backend.etl.SQLDaemon import SQLDaemon
+from alastr.backend.etl.Table import Table
+from alastr.backend.eda.visualization import visualize_distinctive_features, generate_corr_maps, generate_data_heatmaps
 
 
 class OutputManager:
@@ -51,9 +51,9 @@ class OutputManager:
         self.output_label = self.config.get("output_label", "")
         configure_file_handler(self.output_label)
 
-        self.input_dir = os.path.abspath(os.path.expanduser(self.config.get('input_dir', 'elasticas_data/input')))
-        self.output_dir = os.path.abspath(os.path.expanduser(self.config.get('output_dir', 'elasticas_data/output')))
-        self.database_dir = os.path.abspath(os.path.expanduser(self.config.get('database_dir', 'elasticas_data/database')))
+        self.input_dir = os.path.abspath(os.path.expanduser(self.config.get('input_dir', 'alastr_data/input')))
+        self.output_dir = os.path.abspath(os.path.expanduser(self.config.get('output_dir', 'alastr_data/output')))
+        self.database_dir = os.path.abspath(os.path.expanduser(self.config.get('database_dir', 'alastr_data/database')))
         self.sections = self.config.get("sections", {})
         
         self.cluster = self.config.get("cluster", False)

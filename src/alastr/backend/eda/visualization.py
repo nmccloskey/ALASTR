@@ -4,11 +4,11 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from elasticas.backend.tools.logger import logger
+from alastr.backend.tools.logger import logger
 from spacy import displacy
 from svglib.svglib import svg2rlg
 from reportlab.graphics import renderPDF
-from elasticas.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.NLPmodel import NLPmodel
 from PyPDF2 import PdfMerger
 import tempfile
 from tempfile import NamedTemporaryFile

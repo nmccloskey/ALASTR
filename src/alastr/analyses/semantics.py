@@ -2,13 +2,13 @@ import warnings
 import numpy as np
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.nlp.NLPmodel import NLPmodel
+from alastr.backend.nlp.NLPmodel import NLPmodel
 from sklearn.preprocessing import normalize
 from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
-from elasticas.backend.nlp.data_processing import matrix_metrics
-from elasticas.analyses.semantic_scoring import apply_Afinn, apply_VADER, apply_NRCLex, apply_TextBlob
+from alastr.backend.nlp.data_processing import matrix_metrics
+from alastr.analyses.semantic_scoring import apply_Afinn, apply_VADER, apply_NRCLex, apply_TextBlob
 
 warnings.filterwarnings("ignore", message=".*TreeCRF.*does not define `arg_constraints`.*")
 

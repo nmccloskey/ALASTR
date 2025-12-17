@@ -1,15 +1,15 @@
 import os
 import logging
 logger = logging.getLogger("CustomLogger")
-from elasticas.backend.etl.OutputManager import OutputManager
-from elasticas.backend.nlp.preprocessing import preprocess_text
-from elasticas.analyses.graphemes import analyze_graphemes
-from elasticas.analyses.lexicon import analyze_lexicon
-from elasticas.analyses.morphology import analyze_morphology
-from elasticas.analyses.syntax import analyze_syntax
-from elasticas.analyses.phonology import analyze_phonology
-from elasticas.analyses.semantics import analyze_semantics
-from elasticas.analyses.mechanics import analyze_mechanics
+from alastr.backend.etl.OutputManager import OutputManager
+from alastr.backend.nlp.preprocessing import preprocess_text
+from alastr.analyses.graphemes import analyze_graphemes
+from alastr.analyses.lexicon import analyze_lexicon
+from alastr.analyses.morphology import analyze_morphology
+from alastr.analyses.syntax import analyze_syntax
+from alastr.analyses.phonology import analyze_phonology
+from alastr.analyses.semantics import analyze_semantics
+from alastr.analyses.mechanics import analyze_mechanics
 
 OM = OutputManager()
 ngrams = OM.config.get("ngrams", 5)
