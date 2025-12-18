@@ -5,7 +5,7 @@ from alastr.backend.nlp.NLPmodel import NLPmodel
 from lexicalrichness import LexicalRichness
 from wordfreq import word_frequency, zipf_frequency
 from alastr.backend.nlp.data_processing import get_most_common
-import readability
+from readability import Readability
 import textstat as tx
 from alastr.analyses.ngrams import compute_ngrams
 
@@ -190,7 +190,7 @@ def calc_readability(doc):
 
     try:
         func_data = {}
-        r = readability(doc.text)
+        r = Readability(doc.text)
 
         fk = r.flesch_kincaid()
         func_data["flesch_kincaid_score"] = fk.score
