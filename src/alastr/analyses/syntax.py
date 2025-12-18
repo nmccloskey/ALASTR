@@ -3,8 +3,7 @@ import os
 import numpy as np
 from dendropy import Tree
 from collections import Counter
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from nltk import Tree as nltkTree
 from alastr.backend.nlp.NLPmodel import NLPmodel
 from zss import simple_distance, Node

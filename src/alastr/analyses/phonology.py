@@ -2,8 +2,7 @@ import re
 import numpy as np
 from g2p_en import G2p
 from collections import Counter
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.NLPmodel import NLPmodel
 from alastr.backend.nlp.data_processing import calc_props, get_most_common
 

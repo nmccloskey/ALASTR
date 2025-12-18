@@ -1,7 +1,6 @@
 import numpy as np
 from collections import Counter
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.NLPmodel import NLPmodel
 from lexicalrichness import LexicalRichness
 from wordfreq import word_frequency, zipf_frequency

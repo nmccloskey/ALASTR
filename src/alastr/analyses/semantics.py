@@ -1,7 +1,6 @@
 import warnings
 import numpy as np
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.NLPmodel import NLPmodel
 from sklearn.preprocessing import normalize
 from sklearn.decomposition import TruncatedSVD

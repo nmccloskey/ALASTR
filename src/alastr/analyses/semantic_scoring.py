@@ -3,8 +3,7 @@ from afinn import Afinn
 from nrclex import NRCLex
 from textblob import TextBlob
 from collections import Counter
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 
 

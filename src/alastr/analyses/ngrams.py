@@ -1,6 +1,8 @@
 from collections import Counter
 from math import log2
 from typing import List, Dict
+from alastr.backend.tools.logger import logger
+
 
 def compute_ngrams(PM, sequence: List[str], row_base: Dict, prefix: str, gran: str) -> Dict[str, List[Dict]]:
     """

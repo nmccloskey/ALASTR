@@ -1,7 +1,6 @@
 import re
 from collections import Counter
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.data_processing import calc_props, get_most_common
 from alastr.analyses.ngrams import compute_ngrams
 
