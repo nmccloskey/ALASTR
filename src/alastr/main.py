@@ -12,7 +12,8 @@ from alastr.backend.tools.logger import (
 from alastr.backend.tools.auxiliary import (
     project_path,
     load_config,
-    find_files
+    find_files,
+    as_path
 )
 from tqdm import tqdm
 from alastr.backend.tools.logger_old import logger
@@ -28,12 +29,13 @@ def main():
     try:
         start_time = datetime.now()
         timestamp = start_time.strftime("%y%m%d_%H%M")
+        config_path = project_path(as_path("config.yaml"))
 
         OM = OutputManager()
         PM = PipelineManager(OM)
         out_dir = OM.output_dir
 
-        initialize_logger(start_time, out_dir, program_name="RASCAL", version=__version__)
+        initialize_logger(start_time, out_dir, program_name="ALASTR", version=__version__)
         logger.info("Logger initialized and early logs flushed.")
 
         random_seed = 99
@@ -82,7 +84,7 @@ def main():
         terminate_logger(
             input_dir=OM.input_dir,
             output_dir=out_dir,
-            config_path="",
+            config_path=config_path,
             config=OM.config,
             start_time=start_time,
             program_name="ALASTR",
