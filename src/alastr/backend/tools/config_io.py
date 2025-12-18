@@ -3,6 +3,8 @@ from pathlib import Path
 import pandas as pd
 import yaml
 from typing import Dict, Any, List
+from alastr.backend.tools.logger import logger, _rel
+
 
 def xlsx_to_yaml(xlsx_path: Path, yaml_path: Path) -> None:
     """

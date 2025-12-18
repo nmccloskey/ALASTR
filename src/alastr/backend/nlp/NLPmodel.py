@@ -1,8 +1,7 @@
 import spacy
 import benepar
 from nltk.corpus import cmudict
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger, _rel
 import subprocess
 import sys
 

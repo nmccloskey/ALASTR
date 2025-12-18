@@ -2,12 +2,11 @@ import os
 import pandas as pd
 import docx2txt as dx
 from tqdm import tqdm
-import logging
 from pathlib import Path
-logger = logging.getLogger("CustomLogger")
 from alastr.backend.nlp.NLPmodel import NLPmodel
 from alastr.backend.etl.OutputManager import OutputManager
 from alastr.backend.nlp.data_processing import scrub_raw_text, clean_text, get_text_from_cha, get_two_cha_versions
+from alastr.backend.tools.logger import logger, _rel
 
 def process_sents(doc, sample_data, is_cha=False):
     doc_id = sample_data["doc_id"]

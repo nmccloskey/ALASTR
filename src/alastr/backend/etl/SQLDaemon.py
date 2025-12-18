@@ -1,8 +1,7 @@
 import re
 import sqlite3
 import pandas as pd
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger, _rel
 
 
 class SQLDaemon:

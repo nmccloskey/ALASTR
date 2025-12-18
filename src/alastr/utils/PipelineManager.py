@@ -1,6 +1,5 @@
 import os
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger, _rel
 from alastr.backend.etl.OutputManager import OutputManager
 from alastr.backend.nlp.preprocessing import preprocess_text
 from alastr.analyses.graphemes import analyze_graphemes

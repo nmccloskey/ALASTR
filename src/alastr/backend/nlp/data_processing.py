@@ -1,7 +1,6 @@
 import re
 import numpy as np
-import logging
-logger = logging.getLogger("CustomLogger")
+from alastr.backend.tools.logger import logger, _rel
 import re
 from pathlib import Path
 

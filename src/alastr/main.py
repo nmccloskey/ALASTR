@@ -28,7 +28,7 @@ def main():
     """
     try:
         start_time = datetime.now()
-        timestamp = start_time.strftime("%y%m%d_%H%M")
+        # timestamp = start_time.strftime("%y%m%d_%H%M")
         config_path = project_path(as_path("config.yaml"))
 
         OM = OutputManager()

@@ -1,4 +1,6 @@
 from alastr.backend.etl.OutputManager import OutputManager, SQLDaemon
+from alastr.backend.tools.logger import logger, _rel
+
 
 class PipelineManager:
     _instance = None
