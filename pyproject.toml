@@ -29,6 +29,7 @@ dependencies = [
   "nltk",
   "NRCLex",
   "numpy",
+  "openpyxl",
   "pandas",
   "PyYAML",
   "readability",
@@ -43,6 +44,7 @@ dependencies = [
   "tqdm",
   "vaderSentiment",
   "wordfreq",
+  "xlsxwriter",
   "zss",
 ]
 
