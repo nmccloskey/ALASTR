@@ -4,8 +4,8 @@ import pandas as pd
 from datetime import datetime
 import logging
 logger = logging.getLogger("CustomLogger")
-from alastr.backend.tools.logger import logger, configure_file_handler
-from alastr.backend.tools.Tier import TierManager
+from alastr.backend.tools.logger_old import logger, configure_file_handler
+from alastr.backend.tools.Tier_old import TierManager
 from alastr.backend.eda.EDADaemon import EDADaemon
 from alastr.backend.etl.SQLDaemon import SQLDaemon
 from alastr.backend.etl.Table import Table

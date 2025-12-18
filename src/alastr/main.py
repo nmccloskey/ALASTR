@@ -1,7 +1,24 @@
+#!/usr/bin/env python3
+from pathlib import Path
+import random, numpy as np
+from datetime import datetime
+from alastr.backend.tools.logger import (
+    get_root,
+    set_root,
+    logger,
+    initialize_logger,
+    terminate_logger,
+)
+from alastr.backend.tools.auxiliary import (
+    project_path,
+    load_config,
+    find_files
+)
 from tqdm import tqdm
-from alastr.backend.tools.logger import logger
+from alastr.backend.tools.logger_old import logger
 from alastr.backend.etl.OutputManager import OutputManager
 from alastr.utils.PipelineManager import PipelineManager
+from alastr import __version__
 
 
 def main():
@@ -9,8 +26,20 @@ def main():
     Main pipeline for processing and analyzing text samples.
     """
     try:
+        start_time = datetime.now()
+        timestamp = start_time.strftime("%y%m%d_%H%M")
+
         OM = OutputManager()
         PM = PipelineManager(OM)
+        out_dir = OM.output_dir
+
+        initialize_logger(start_time, out_dir, program_name="RASCAL", version=__version__)
+        logger.info("Logger initialized and early logs flushed.")
+
+        random_seed = 99
+        random.seed(random_seed)
+        np.random.seed(random_seed)
+        logger.info(f"Random seed set to {random_seed}")
 
         doc_ids = PM.run_preprocessing()
 
@@ -46,6 +75,19 @@ def main():
 
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")
+
+
+    finally:
+        # Always finalize logging and metadata
+        terminate_logger(
+            input_dir=OM.input_dir,
+            output_dir=out_dir,
+            config_path="",
+            config=OM.config,
+            start_time=start_time,
+            program_name="ALASTR",
+            version=__version__,
+        )
 
 if __name__ == "__main__":
     main()

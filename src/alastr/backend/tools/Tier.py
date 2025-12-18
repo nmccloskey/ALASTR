@@ -1,129 +1,106 @@
 import re
-import logging
-logger = logging.getLogger("CustomLogger")
+import random
+from typing import List
+from alastr.backend.tools.logger import logger
 
 
 class Tier:
-    def __init__(self, name, partition=False, search_str=None):
+    def __init__(self, name: str, values: List[str], partition: bool, blind: bool):
         """
         Initializes a Tier object.
 
-        Args:
-            name (str): The name of the tier (column name if no regex).
-            search_str (str, optional): A regex pattern to match values.
-            partition (bool): Whether this tier is used for partitioning.
+        Parameters:
+        - name (str): The name of the tier.
+        - values (list[str]): Values used to create/represent the regex. If len(values) == 1,
+                              we treat values[0] as a user-provided regex. If len(values) > 1,
+                              we build a regex that matches any of the literal values.
+        - partition (bool): Whether this tier is used for partitioning.
+        - blind (bool): Whether this tier is blinded in CU summaries.
         """
-        try:
-            self.name = str(name)
-            self.partition = partition
+        self.name = name
+        self.values = values or []
+        self.partition = partition
+        self.blind = blind
 
-            if search_str:
-                self.search_str = re.compile(search_str)
-                logger.info(f"Initialized Tier: {self.name}, partition: {partition}, regex: {search_str}")
-            else:
-                self.search_str = None
-                logger.info(f"Initialized Tier: {self.name} (column match), partition: {partition}")
-
-        except re.error as e:
-            logger.error(f"Invalid regex pattern for Tier '{name}': {e}")
-            raise ValueError(f"Invalid regex pattern: {search_str}")
-
-    def match(self, text):
-        """
-        Matches text against the regex pattern (if provided).
-
-        Args:
-            text (str): The text to be analyzed.
-
-        Returns:
-            str: Matched value, tier name (for columns), or None if no match.
-        """
-        try:
-            if self.search_str:
-                match = self.search_str.search(text)
-                if match:
-                    logger.debug(f"Match found for '{self.name}' in text: {text}")
-                    return match.group(0)
-                else:
-                    logger.warning(f"No match found for regex tier '{self.name}' in text: {text}.")
-                    return None
-            else:
-                return None
-
-        except Exception as e:
-            logger.error(f"Error processing text match for Tier '{self.name}': {e}")
-            return None
-
-
-class TierManager:
-    _instance = None
-
-    def __new__(cls, OM=None):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance.tiers = {}
-            cls._instance.OM = OM
-            cls._instance._init_tiers()
-            logger.info("TierManager instance created.")
-        return cls._instance
-
-    def _init_tiers(self):
-        """
-        Initializes tiers based on configuration.
-
-        Args:
-            config (dict): Configuration dictionary containing tier names and optional regex patterns.
-        """
-        tier_config = self.OM.config.get("tiers", {})
-        if not tier_config:
-            logger.warning("No configuration provided for TierManager.")
-            return
-
-        for tier_name in tier_config:
+        # Decide whether to treat values as a direct regex or as literal choices
+        if len(self.values) == 1:
+            # User provided a single regex string
+            self.is_user_regex = True
+            self.search_str = self.values[0]
             try:
-                tier_name = self.OM.db.sanitize_column_name(tier_name)
-                new_tier = Tier(tier_name, tier_config[tier_name]["partition"], tier_config[tier_name]["regex"])
-                self.tiers[tier_name] = new_tier
-
-            except ValueError as e:
-                logger.error(f"Skipping Tier '{tier_name}' due to invalid regex: {e}")
-                continue
-
-        logger.info(f"Tiers: {[(t.name, t.partition, t.search_str) for t in self.tiers.values()]}")
-    
-    def get_tier_names(self):
-        """Returns list of tier names."""
-        return list(self.tiers.keys())
-
-    def get_partition_tiers(self):
-        """
-        Retrieves partitioning tiers.
-
-        Returns:
-            list: List of Tier names used for partitioning.
-        """
-        return [tier.name for tier in self.tiers.values() if tier.partition]
-
-    def match_tiers(self, text):
-        """
-        Applies all tiers to the given text.
-
-        Args:
-            text (str): The text to be analyzed.
-
-        Returns:
-            dict: Mapping of tier names to their matched values.
-        """
-        results = {}
-        for tier in self.tiers.values():
-            results[tier.name] = tier.match(text)
-        return results
-
-    def make_tier(self, tier_name, partition=False, search_str=None):
-        if tier_name not in self.tiers.keys():
-            tier_name = self.OM.db.sanitize_column_name(tier_name)
-            new_tier = Tier(tier_name, partition, search_str)
-            logger.info(f"Added Tier '{tier_name}' partition: {partition}")
-            return new_tier
+                self.pattern = re.compile(self.search_str)
+            except re.error as e:
+                raise ValueError(
+                    f"Tier '{self.name}': invalid regex provided: {self.search_str!r}. "
+                    f"Regex compile error: {e}"
+                )
+            logger.info(
+                f"Initialized Tier '{self.name}' with user regex: {self.search_str!r} "
+                f"(partition={self.partition}, blind={self.blind})"
+            )
         else:
-            logger.warning(f"Tier {tier_name} already exists.")
+            # Build a regex from multiple literal values
+            self.is_user_regex = False
+            self.search_str = self._make_search_string(self.values)
+            try:
+                self.pattern = re.compile(self.search_str)
+            except re.error as e:
+                raise ValueError(
+                    f"Tier '{self.name}': failed to compile built regex {self.search_str!r}. "
+                    f"Compile error: {e}"
+                )
+            logger.info(
+                f"Initialized Tier '{self.name}' with {len(self.values)} literal values "
+                f"(partition={self.partition}, blind={self.blind}). Regex={self.search_str!r}"
+            )
+
+    def _make_search_string(self, values: List[str]) -> str:
+        """
+        Generates a regex from provided literal values (escaped, joined with '|').
+        Returns a non-capturing group: (?:v1|v2|...)
+        """
+        if not values:
+            logger.warning(f"Tier '{self.name}' received empty values; regex will never match.")
+            return r"(?!x)x"  # matches nothing
+
+        # Escape each literal to avoid accidental regex meta-characters
+        escaped = [re.escape(v) for v in values]
+        search_str = "(?:" + "|".join(escaped) + ")"
+        logger.debug(f"Tier '{self.name}': generated search string from literals: {search_str}")
+        return search_str
+
+    def match(self, text: str, return_None: bool = False, must_match: bool = False):
+        """
+        Applies the compiled regex pattern to a given text.
+
+        Returns:
+        - str: The matched value if found (match.group(0)).
+        - None: If no match is found and return_None is True.
+        - str: The tier name if no match is found and return_None is False (legacy behavior).
+        """
+        m = self.pattern.search(text)
+        if m:
+            return m.group(0)
+        if return_None:
+            if must_match:
+                logger.warning(f"No match for tier '{self.name}' in text: {text!r}")
+            return None
+        if must_match:
+            logger.error(f"No match for tier '{self.name}' in text: {text!r}. Returning tier name.")
+        return self.name
+
+    def make_blind_codes(self):
+        """
+        Generates a blinded coding system for the tier values (for literal-value tiers).
+        For user-regex tiers, 'values' may not be an exhaustive set—use with caution.
+        """
+        logger.info(f"Generating blind codes for tier: {self.name}")
+        if not self.values:
+            logger.warning(f"Tier '{self.name}' has no values; blind code mapping will be empty.")
+            return {self.name: {}}
+
+        blind_codes = list(range(len(self.values)))
+        random.shuffle(blind_codes)
+        blind_code_mapping = {k: v for k, v in zip(self.values, blind_codes)}
+        logger.debug(f"Blind code mapping for '{self.name}': {blind_code_mapping}")
+        return {self.name: blind_code_mapping}
