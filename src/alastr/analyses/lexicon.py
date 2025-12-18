@@ -9,6 +9,16 @@ from readability import Readability
 import textstat as tx
 from alastr.analyses.ngrams import compute_ngrams
 
+import nltk
+
+def ensure_punkt():
+    try:
+        nltk.data.find("tokenizers/punkt")
+    except LookupError:
+        nltk.download("punkt", quiet=True)
+
+ensure_punkt()
+
 
 def calculate_frequencies(doc, label):
     """
