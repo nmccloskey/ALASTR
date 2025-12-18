@@ -219,7 +219,7 @@ class OutputManager:
             df = table.get_data()
             if df is not None and not df.empty:
                 mode = "a" if file_path.exists() else "w"
-                with pd.ExcelWriter(file_path, mode=mode) as writer:
+                with pd.ExcelWriter(file_path, engine="openpyxl", mode=mode) as writer:
                     df.to_excel(writer, sheet_name=table.sheet_name, index=False)
                 logger.info(f"Exported table '{table_name}' to {file_path}")
             else:
