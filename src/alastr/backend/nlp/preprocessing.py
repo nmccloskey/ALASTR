@@ -229,9 +229,9 @@ def preprocess_text(PM) -> list:
     doc_ids = []
     allowed_extensions = {".cha", ".txt", ".docx", ".csv", ".xlsx"}
     file_paths = [f for f in Path(OM.input_dir).rglob("*") if f.suffix.lower() in allowed_extensions and f.is_file()]
-    logger.info(f"Paths: {file_paths}")
+    # logger.info(f"Paths: {file_paths}")
     file_names = [str(os.path.basename(f)) for f in file_paths]
-    logger.info(f"Names: {file_names}")
+    # logger.info(f"Names: {file_names}")
     logger.info(f"Found {len(file_paths)} files in '{OM.input_dir}'. Processing started...")
     progress_bar = tqdm(zip(file_names, file_paths), desc="Reading Files", dynamic_ncols=True)
 
