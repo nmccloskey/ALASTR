@@ -14,7 +14,7 @@ While ALASTR draws on concepts and components piloted in earlier prototypes (e.g
 
 - **Scalability:** Process many transcripts in batch (across participants, timepoints, or conditions) with consistent configuration and logging.
 - **Clinical relevance:** Target metrics and summaries that are meaningful for aphasiology and speech–language pathology.
-- **Interoperability with CHAT/CLAN:** Work *with* existing CHAT-formatted (.cha) transcripts rather than replacing them, enabling semi-automated workflows.
+- **Interoperability with CHAT/CLAN:** Leverage automation to populate tiers (e.g.,morphology) in CHAT-formatted (.cha) transcripts, enabling semi-automated workflows.
 - **Integration with other tools:** Provide hooks for metrics and outputs from systems such as RASCAL (monologic discourse analysis) and DIAAD (dialogue analysis).
 
 ---
