@@ -150,14 +150,6 @@ def analyze_graphemes(PM, sample_data):
         doc_data_base = {"doc_id": doc_id}
         func_data = count_graphemes(doc_cleaned)
 
-        logger.info(
-            "Before compute_ngrams: PM_id=%s PM_class=%s PM_module=%s ngram_id_doc=%s",
-            id(PM),
-            PM.__class__.__name__,
-            PM.__class__.__module__,
-            getattr(PM, "ngram_id_doc", None),
-        )
-
         summary_data, ngram_data, current_ngram_id = compute_ngrams(PM, list(doc_cleaned), doc_data_base, "grapheme", "doc")
         func_data.update(summary_data)
         PM.ngram_id_doc = current_ngram_id
