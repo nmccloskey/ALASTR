@@ -1,5 +1,5 @@
 import re
-from .tier import Tier
+from alastr.backend.tools.Tier import Tier
 from alastr.backend.tools.logger import logger
 
 

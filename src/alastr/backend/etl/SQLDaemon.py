@@ -76,61 +76,173 @@ class SQLDaemon:
 
         except sqlite3.OperationalError as e:
             logger.error(f"SQL error updating '{table_name}': {e}")
-   
-    def _update_single_row(self, cursor, table_name, row_data):
+    
+    def _update_single_row(self, cursor: sqlite3.Cursor, table_name: str, row_data: dict):
         """
-        Updates a single row in the database dynamically, using primary keys inferred from the row data.
+        Inserts or updates a single row in the database dynamically.
 
-        Args:
-            cursor (sqlite3.Cursor): SQLite cursor object.
-            table_name (str): Name of the table.
-            row_data (dict): The row data to insert or update.
+        Behavior:
+        - If table PKs are ["AUTO"] (or include "AUTO"), we treat the table as insert-only:
+            * Ensure columns exist
+            * INSERT the row (no PK existence check, no UPDATE)
+        This is MVP-friendly for ngram tables where you don't want to manage IDs yet.
+
+        - Otherwise, we do the usual PK-driven upsert:
+            * Validate PK values
+            * INSERT stub if missing
+            * ALTER TABLE for any new columns
+            * UPDATE non-PK columns
         """
-        # Identify primary keys (PKs) dynamically
-        # PKs = [col for col in row_data.keys() if col.endswith("_id")]
-        PKs = self.om.tables[table_name].get_pks()
-        if not PKs:
-            raise ValueError(f"Missing PKs in update data for table '{table_name}'")
+        try:
+            # ---- PK discovery ----
+            PKs = self.om.tables[table_name].get_pks() or []
+            auto_pk = any(isinstance(pk, str) and pk.upper() == "AUTO" for pk in PKs)
 
-        # Ensure all PKs have values
-        pk_values = {pk: row_data.get(pk) for pk in PKs if row_data.get(pk) is not None}
-        if len(pk_values) != len(PKs):
-            raise ValueError(f"One or more primary keys are missing values in '{table_name}'")
+            # ---- Sanitize incoming data keys once ----
+            sanitized_data = {self.om.sanitize_column_name(col): val for col, val in row_data.items()}
 
-        # Check if the row exists
-        where_clause = " AND ".join([f"{pk} = :{pk}" for pk in pk_values.keys()])
-        check_sql = f"SELECT 1 FROM {table_name} WHERE {where_clause}"
-        cursor.execute(check_sql, pk_values)
-        exists = cursor.fetchone()
+            # ---- Discover existing columns ----
+            cursor.execute(f"PRAGMA table_info({table_name});")
+            existing_columns = {row[1] for row in cursor.fetchall()}  # row[1] = column name
 
-        # Insert row if it does not exist
-        if not exists:
-            insert_columns = ", ".join(pk_values.keys())
-            placeholders = ", ".join([f":{pk}" for pk in pk_values.keys()])
-            insert_sql = f"INSERT INTO {table_name} ({insert_columns}) VALUES ({placeholders})"
-            cursor.execute(insert_sql, pk_values)
+            # ---- Add new columns dynamically if needed ----
+            new_columns = {
+                col: "INTEGER" if isinstance(val, int) else "REAL" if isinstance(val, float) else "TEXT"
+                for col, val in sanitized_data.items()
+                if col not in existing_columns
+            }
+            for column, data_type in new_columns.items():
+                logger.info(f"Adding new column to {table_name}: {column} {data_type}")
+                cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN \"{column}\" {data_type}")
 
-        # Retrieve existing columns from the table
-        cursor.execute(f"PRAGMA table_info({table_name});")
-        existing_columns = {row[1] for row in cursor.fetchall()}
+            # ============================================================
+            # AUTO-PK MODE: insert-only
+            # ============================================================
+            if auto_pk:
+                # If you are also including an explicit auto-id column (e.g., ngram_id),
+                # and it is missing/None, we exclude it from INSERT so SQLite can assign it.
+                insert_cols = []
+                insert_vals = {}
+                for col, val in sanitized_data.items():
+                    if col.lower() in {"ngram_id", "id"} and val is None:
+                        continue
+                    insert_cols.append(col)
+                    insert_vals[col] = val
 
-        # Sanitize and check for new columns
-        sanitized_data = {self.om.sanitize_column_name(col): val for col, val in row_data.items()}
-        new_columns = {
-            col: "INTEGER" if isinstance(val, int) else "REAL" if isinstance(val, float) else "TEXT"
-            for col, val in sanitized_data.items() if col not in existing_columns
-        }
+                if not insert_cols:
+                    logger.warning(f"{table_name}: AUTO insert skipped because row_data had no insertable columns.")
+                    return
 
-        # Add new columns dynamically if needed
-        for column, data_type in new_columns.items():
-            cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN \"{column}\" {data_type}")
+                col_clause = ", ".join([f"\"{c}\"" for c in insert_cols])
+                ph_clause = ", ".join([f":{c}" for c in insert_cols])
+                insert_sql = f"INSERT INTO {table_name} ({col_clause}) VALUES ({ph_clause})"
 
-        # Construct the update statement dynamically
-        update_clause = ", ".join([f"\"{col}\" = :{col}" for col in sanitized_data.keys()])
-        sql = f"UPDATE {table_name} SET {update_clause} WHERE {where_clause}"
+                cursor.execute(insert_sql, insert_vals)
+                logger.debug(
+                    f"{table_name}: AUTO insert ok (lastrowid={cursor.lastrowid}). "
+                    f"Keys present: {sorted(list(insert_vals.keys()))[:8]}..."
+                )
+                return
 
-        # Execute the update statement
-        cursor.execute(sql, sanitized_data)
+            # ============================================================
+            # NORMAL MODE: PK-driven upsert
+            # ============================================================
+            if not PKs:
+                raise ValueError(f"Missing PKs in OutputManager table metadata for '{table_name}'")
+
+            # Sanitize PK names too (critical if sanitize changes names)
+            sanitized_pks = [self.om.sanitize_column_name(pk) for pk in PKs]
+
+            # Ensure all PKs have values
+            pk_values = {pk: sanitized_data.get(pk) for pk in sanitized_pks if sanitized_data.get(pk) is not None}
+            if len(pk_values) != len(sanitized_pks):
+                missing = [pk for pk in sanitized_pks if sanitized_data.get(pk) is None]
+                raise ValueError(f"Missing PK values in '{table_name}': {missing}")
+
+            # Check if the row exists
+            where_clause = " AND ".join([f"\"{pk}\" = :{pk}" for pk in sanitized_pks])
+            check_sql = f"SELECT 1 FROM {table_name} WHERE {where_clause}"
+            cursor.execute(check_sql, pk_values)
+            exists = cursor.fetchone()
+
+            # Insert stub if it doesn't exist
+            if not exists:
+                insert_columns = ", ".join([f"\"{pk}\"" for pk in sanitized_pks])
+                placeholders = ", ".join([f":{pk}" for pk in sanitized_pks])
+                insert_sql = f"INSERT INTO {table_name} ({insert_columns}) VALUES ({placeholders})"
+                cursor.execute(insert_sql, pk_values)
+                logger.debug(f"{table_name}: inserted stub row for PKs={pk_values}")
+
+            # Update statement: update non-PK columns only
+            non_pk_cols = [c for c in sanitized_data.keys() if c not in set(sanitized_pks)]
+            if not non_pk_cols:
+                logger.debug(f"{table_name}: no non-PK columns to update for PKs={pk_values}")
+                return
+
+            update_clause = ", ".join([f"\"{col}\" = :{col}" for col in non_pk_cols])
+            sql = f"UPDATE {table_name} SET {update_clause} WHERE {where_clause}"
+
+            cursor.execute(sql, sanitized_data)
+            logger.debug(f"{table_name}: updated row for PKs={pk_values} (cols={len(non_pk_cols)})")
+
+        except Exception:
+            logger.exception(f"Failed _update_single_row for table={table_name}. Row keys={list(row_data.keys())[:12]}...")
+            raise
+
+    # def _update_single_row(self, cursor, table_name, row_data):
+    #     """
+    #     Updates a single row in the database dynamically, using primary keys inferred from the row data.
+
+    #     Args:
+    #         cursor (sqlite3.Cursor): SQLite cursor object.
+    #         table_name (str): Name of the table.
+    #         row_data (dict): The row data to insert or update.
+    #     """
+    #     # Identify primary keys (PKs) dynamically
+    #     # PKs = [col for col in row_data.keys() if col.endswith("_id")]
+    #     PKs = self.om.tables[table_name].get_pks()
+    #     if not PKs:
+    #         raise ValueError(f"Missing PKs in update data for table '{table_name}'")
+
+    #     # Ensure all PKs have values
+    #     pk_values = {pk: row_data.get(pk) for pk in PKs if row_data.get(pk) is not None}
+    #     if len(pk_values) != len(PKs):
+    #         raise ValueError(f"One or more primary keys are missing values in '{table_name}'")
+
+    #     # Check if the row exists
+    #     where_clause = " AND ".join([f"{pk} = :{pk}" for pk in pk_values.keys()])
+    #     check_sql = f"SELECT 1 FROM {table_name} WHERE {where_clause}"
+    #     cursor.execute(check_sql, pk_values)
+    #     exists = cursor.fetchone()
+
+    #     # Insert row if it does not exist
+    #     if not exists:
+    #         insert_columns = ", ".join(pk_values.keys())
+    #         placeholders = ", ".join([f":{pk}" for pk in pk_values.keys()])
+    #         insert_sql = f"INSERT INTO {table_name} ({insert_columns}) VALUES ({placeholders})"
+    #         cursor.execute(insert_sql, pk_values)
+
+    #     # Retrieve existing columns from the table
+    #     cursor.execute(f"PRAGMA table_info({table_name});")
+    #     existing_columns = {row[1] for row in cursor.fetchall()}
+
+    #     # Sanitize and check for new columns
+    #     sanitized_data = {self.om.sanitize_column_name(col): val for col, val in row_data.items()}
+    #     new_columns = {
+    #         col: "INTEGER" if isinstance(val, int) else "REAL" if isinstance(val, float) else "TEXT"
+    #         for col, val in sanitized_data.items() if col not in existing_columns
+    #     }
+
+    #     # Add new columns dynamically if needed
+    #     for column, data_type in new_columns.items():
+    #         cursor.execute(f"ALTER TABLE {table_name} ADD COLUMN \"{column}\" {data_type}")
+
+    #     # Construct the update statement dynamically
+    #     update_clause = ", ".join([f"\"{col}\" = :{col}" for col in sanitized_data.keys()])
+    #     sql = f"UPDATE {table_name} SET {update_clause} WHERE {where_clause}"
+
+    #     # Execute the update statement
+    #     cursor.execute(sql, sanitized_data)
 
     def access_data(self, table_name, columns='*', filters=None):
         """

@@ -115,7 +115,8 @@ class PipelineManager:
         return cls._instance  # Always return the same instance
 
     def __init__(self, OM: OutputManager):
-        if self._initialized:
+        cls = type(self)
+        if cls._initialized:
             return  # Prevent re-initialization
         
         # Initialization logic
@@ -131,7 +132,7 @@ class PipelineManager:
         self.ngram_id_sent = 1
         self.ngram_id_doc = 1
 
-        self._initialized = True  # Mark as initialized
+        cls._initialized = True  # Mark as initialized
 
     def _init_analyses(self, section_dict):
         for section, (func, table_structure) in section_dict.items():
@@ -192,7 +193,7 @@ class Analysis:
                         pivot = {
                             "index": "doc_id", "columns": "ngram", "values": "prop"
                         }
-                        primary_keys = ["ngram_id"]
+                        primary_keys = ["AUTO"]
                     else:
                         pivot = None
                         primary_keys = pks[gran]
