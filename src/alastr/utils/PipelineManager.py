@@ -2,7 +2,6 @@ import os
 from alastr.backend.tools.logger import logger, _rel
 from alastr.backend.etl.OutputManager import OutputManager
 from alastr.backend.nlp.preprocessing import preprocess_text
-from alastr.analyses.graphemes import analyze_graphemes
 from alastr.analyses.lexicon import analyze_lexicon
 from alastr.analyses.morphology import analyze_morphology
 from alastr.analyses.syntax import analyze_syntax
@@ -22,20 +21,6 @@ SECTION_CONFIG = {
             "preprocessed": [
                 "sample_data", "sample_text"
             ]
-        }
-    ),
-
-    "graphemes": (
-        analyze_graphemes,
-        {
-            "grapheme_stats": [
-                "grapheme_basic_specs", "grapheme_counts", "grapheme_props",
-                "grapheme_modes", "word_counts", "word_props"
-            ],
-            
-            "grapheme_ngrams": [
-                "grapheme_ngram_summary"
-            ] + [f"grapheme_n{n}grams" for n in range(1, ngrams + 1)]
         }
     ),
     
