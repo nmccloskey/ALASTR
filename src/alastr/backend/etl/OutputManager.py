@@ -4,10 +4,9 @@ import pandas as pd
 from datetime import datetime
 import logging
 logger = logging.getLogger("CustomLogger")
-from alastr.backend.tools.logger_old import configure_file_handler
 from alastr.backend.tools.logger import logger, _rel
 from alastr.backend.tools.auxiliary import project_path, as_path, find_config_file, load_config, find_files
-from alastr.backend.tools.Tier_old import TierManager
+from alastr.backend.tools.Tier import TierManager
 from alastr.backend.eda.EDADaemon import EDADaemon
 from alastr.backend.etl.SQLDaemon import SQLDaemon
 from alastr.backend.etl.Table import Table
@@ -49,9 +48,6 @@ class OutputManager:
     def _load_config(self, config_file="config.yaml"):
         self.config = self._load_yaml(config_file)
         logger.info(f"Loaded config: {self.config}")
-
-        self.output_label = self.config.get("output_label", "")
-        configure_file_handler(self.output_label)
 
         self.input_dir = project_path(self.config.get('input_dir', 'alastr_data/input'))
         self.output_dir = project_path(self.config.get('output_dir', 'alastr_data/output'))

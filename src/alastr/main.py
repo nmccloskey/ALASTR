@@ -16,7 +16,7 @@ from alastr.backend.tools.auxiliary import (
     as_path
 )
 from tqdm import tqdm
-from alastr.backend.tools.logger_old import logger
+from alastr.backend.tools.logger import logger
 from alastr.backend.etl.OutputManager import OutputManager
 from alastr.utils.PipelineManager import PipelineManager
 from alastr import __version__
