@@ -47,19 +47,7 @@ class OutputManager:
 
         self.input_dir = project_path(self.config.get('input_dir', 'alastr_data/input'))
         self.output_dir = project_path(self.config.get('output_dir', 'alastr_data/output'))
-        self.database_dir = project_path(self.config.get('database_dir', 'alastr_data/database'))
         self.sections = self.config.get("sections", {})
-        self.aggregate = self.config.get("aggregate", False)
-
-        self.aggregation_combos = self.config.get("aggregation_combos", [])
-        self.all_aggregation_combos = self.config.get("all_aggregation_combos", False)
-        self.aggregate_with_clusters = self.config.get("aggregate_with_clusters", False)
-        self.aggregation_cols = list(set([col for combo in self.aggregation_combos for col in combo]))
-        
-        self.comparison_combos = self.config.get("comparison_combos", [])
-        self.all_comparison_combos = self.config.get("all_comparison_combos", False)
-        self.compare_with_clusters = self.config.get("compare_with_clusters", False)
-        self.comparison_cols = list(set([col for combo in self.comparison_combos for col in combo]))
 
     def _init_output_dir(self):
         self.timestamp = datetime.now().strftime("%y%m%d_%H%M")
@@ -69,8 +57,7 @@ class OutputManager:
     
     def _init_db(self):
         """Initializes database path and creates empty tables via SQLDaemon."""
-        self.db_path = self.database_dir / f"alastr_database_{self.timestamp}.sqlite"
-        self.database_dir.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.output_dir / f"alastr_database_{self.timestamp}.sqlite"
         logger.info(f"Database set at {self.db_path}")
 
     def create_table(self, name, sheet_name, section, subdir, file_name, primary_keys, pivot):
