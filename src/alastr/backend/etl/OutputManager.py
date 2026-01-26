@@ -16,8 +16,7 @@ class OutputManager:
 
     def __new__(cls):
         """
-        Singleton OutputManager class to handle data processing configurations, directory structures,
-        database connections, and visualization options.
+        Singleton OutputManager class to handle data processing configurations, directory structures, and database connections.
         """
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -50,14 +49,7 @@ class OutputManager:
         self.output_dir = project_path(self.config.get('output_dir', 'alastr_data/output'))
         self.database_dir = project_path(self.config.get('database_dir', 'alastr_data/database'))
         self.sections = self.config.get("sections", {})
-        
-        self.cluster = self.config.get("cluster", False)
-        self.visualize = self.config.get("visualize", False)
         self.aggregate = self.config.get("aggregate", False)
-        self.compare_groups = self.config.get("compare_groups", False)
-
-        self.cohen_d_threshold = self.config.get("cohen_d_threshold", 0.8)
-        self.max_feature_visuals = self.config.get("max_feature_visuals", 5)
 
         self.aggregation_combos = self.config.get("aggregation_combos", [])
         self.all_aggregation_combos = self.config.get("all_aggregation_combos", False)

@@ -107,7 +107,6 @@ class PipelineManager:
         # Initialization logic
         self.om = OM
         self.sentence_level = OM.config.get("sentence_level", False)
-        self.visualize = OM.visualize
         self.dep_trees = OM.config.get("dep_trees", False)
         self.granularities = ["doc", "sent"] if self.sentence_level else ["doc"]
         self.sections = {}  # section_name: Analysis instance

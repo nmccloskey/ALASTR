@@ -65,15 +65,8 @@ def main():
             for table_name in results:
                 OM.tables[table_name].export_to_excel()            
             
-            if OM.cluster:
-                for table_name in results:
-                    OM.run_clustering(table_name, section)
-            
-            if OM.aggregate or OM.compare_groups:
+            if OM.aggregate:
                 OM.run_aggregate_analyses(results, section)
-            
-            if OM.visualize:
-                OM.generate_visuals(section)
 
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")

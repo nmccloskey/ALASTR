@@ -1,30 +1,34 @@
 import re
-import random
-from typing import List
+from typing import List, Union, Optional
 from alastr.backend.tools.logger import logger
 
 
 class Tier:
-    def __init__(self, name: str, values: List[str], partition: bool, blind: bool):
+    def __init__(self, name: str, values: Optional[Union[str, List[str]]]):
         """
         Initializes a Tier object.
 
-        Parameters:
-        - name (str): The name of the tier.
-        - values (list[str]): Values used to create/represent the regex. If len(values) == 1,
-                              we treat values[0] as a user-provided regex. If len(values) > 1,
-                              we build a regex that matches any of the literal values.
-        - partition (bool): Whether this tier is used for partitioning.
-        - blind (bool): Whether this tier is blinded in CU summaries.
+        Parameters
+        ----------
+        name : str
+            Tier name (e.g., "site", "study_id").
+        values : str | list[str] | None
+            - If a single string (or list of length 1): treated as a user-provided regex.
+            - If a list of length > 1: treated as literal values; we build a regex matching
+              any of them (escaped) via a non-capturing group.
         """
         self.name = name
-        self.values = values or []
-        self.partition = partition
-        self.blind = blind
+
+        # Normalize values to list[str]
+        if values is None:
+            self.values: List[str] = []
+        elif isinstance(values, str):
+            self.values = [values]
+        else:
+            self.values = list(values)
 
         # Decide whether to treat values as a direct regex or as literal choices
         if len(self.values) == 1:
-            # User provided a single regex string
             self.is_user_regex = True
             self.search_str = self.values[0]
             try:
@@ -34,12 +38,8 @@ class Tier:
                     f"Tier '{self.name}': invalid regex provided: {self.search_str!r}. "
                     f"Regex compile error: {e}"
                 )
-            logger.info(
-                f"Initialized Tier '{self.name}' with user regex: {self.search_str!r} "
-                f"(partition={self.partition}, blind={self.blind})"
-            )
+            logger.info(f"Initialized Tier '{self.name}' with user regex: {self.search_str!r}")
         else:
-            # Build a regex from multiple literal values
             self.is_user_regex = False
             self.search_str = self._make_search_string(self.values)
             try:
@@ -50,34 +50,23 @@ class Tier:
                     f"Compile error: {e}"
                 )
             logger.info(
-                f"Initialized Tier '{self.name}' with {len(self.values)} literal values "
-                f"(partition={self.partition}, blind={self.blind}). Regex={self.search_str!r}"
+                f"Initialized Tier '{self.name}' with {len(self.values)} literal values: "
+                f"Regex={self.search_str!r}"
             )
 
     def _make_search_string(self, values: List[str]) -> str:
         """
-        Generates a regex from provided literal values (escaped, joined with '|').
+        Build a regex from provided literal values (escaped, joined with '|').
         Returns a non-capturing group: (?:v1|v2|...)
         """
         if not values:
             logger.warning(f"Tier '{self.name}' received empty values; regex will never match.")
             return r"(?!x)x"  # matches nothing
 
-        # Escape each literal to avoid accidental regex meta-characters
         escaped = [re.escape(v) for v in values]
-        search_str = "(?:" + "|".join(escaped) + ")"
-        logger.debug(f"Tier '{self.name}': generated search string from literals: {search_str}")
-        return search_str
+        return "(?:" + "|".join(escaped) + ")"
 
     def match(self, text: str, return_None: bool = False, must_match: bool = False):
-        """
-        Applies the compiled regex pattern to a given text.
-
-        Returns:
-        - str: The matched value if found (match.group(0)).
-        - None: If no match is found and return_None is True.
-        - str: The tier name if no match is found and return_None is False (legacy behavior).
-        """
         m = self.pattern.search(text)
         if m:
             return m.group(0)
@@ -88,22 +77,6 @@ class Tier:
         if must_match:
             logger.error(f"No match for tier '{self.name}' in text: {text!r}. Returning tier name.")
         return self.name
-
-    def make_blind_codes(self):
-        """
-        Generates a blinded coding system for the tier values (for literal-value tiers).
-        For user-regex tiers, 'values' may not be an exhaustive set—use with caution.
-        """
-        logger.info(f"Generating blind codes for tier: {self.name}")
-        if not self.values:
-            logger.warning(f"Tier '{self.name}' has no values; blind code mapping will be empty.")
-            return {self.name: {}}
-
-        blind_codes = list(range(len(self.values)))
-        random.shuffle(blind_codes)
-        blind_code_mapping = {k: v for k, v in zip(self.values, blind_codes)}
-        logger.debug(f"Blind code mapping for '{self.name}': {blind_code_mapping}")
-        return {self.name: blind_code_mapping}
 
 
 class TierManager:
@@ -118,161 +91,74 @@ class TierManager:
             logger.info("TierManager instance created.")
         return cls._instance
 
+    @staticmethod
     def default_tiers() -> dict:
         """Return a default single-tier mapping that matches the entire filename."""
-        logger.warning("No valid tiers detected — defaulting to full filename match ('.*(?=\.cha)').")
+        logger.warning("No valid tiers detected — defaulting to full filename match ('.*(?=\\.cha)').")
         default_name = "file_name"
-        # one regex string in a list → treated as user regex
-        return {default_name: Tier(name=default_name, values=[r".*(?=\.cha)"], partition=False, blind=False)}
+        return {default_name: Tier(name=default_name, values=r".*(?=\.cha)")}
 
     def read_tiers(self, config_tiers: dict | None) -> dict[str, Tier]:
         """
-        Parse tier definitions from a configuration dictionary into Tier objects.
+        Parse tier definitions from the config.
 
-        Behavior
-        --------
-        - Input must be a dict mapping tier name → definition.
-        - Each definition may be:
-            * dict with keys:
-                - 'values': list[str] | str (required)
-                - 'partition': bool (optional)
-                - 'blind': bool (optional)
-            * or legacy shorthand: list[str] or str.
-        - A single 'values' entry is treated as a user regex (validated).
-        - Multiple entries are treated literally.
-        - Empty, invalid, or missing tiers trigger fallback behavior.
-
-        Returns
-        -------
-        dict[str, Tier]
-            Mapping of tier name → Tier object.
-
-        Logging
-        --------
-        - Warns if no usable tiers found.
-        - Errors on regex compilation failures or invalid structures.
-        - Info-level notices for partition/blind flags.
+        Expects:
+          tiers:
+            tier_name:
+              values: <str regex> OR [<literal>, <literal>, ...]
         """
-
         if not config_tiers or not isinstance(config_tiers, dict):
             logger.warning("Tier config missing or invalid; using default tiers.")
             return self.default_tiers()
 
         tiers: dict[str, Tier] = {}
 
-        for tier_name, tier_data in config_tiers.items():
+        for raw_name, tier_data in config_tiers.items():
             try:
-                # Normalize structure
+                tier_name = self.OM.db.sanitize_column_name(raw_name) if self.OM else raw_name
+
+                # Allow shorthand: tier_name: "REGEX"  or  tier_name: ["A","B"]
                 if isinstance(tier_data, (str, list)):
-                    tier_data = {"values": [tier_data] if isinstance(tier_data, str) else tier_data}
+                    tier_data = {"values": tier_data}
 
                 values = tier_data.get("values", [])
-                if isinstance(values, str):
-                    values = [values]
-
-                partition = bool(tier_data.get("partition", False))
-                blind = bool(tier_data.get("blind", False))
-
-                if not values:
-                    logger.warning(f"Tier '{tier_name}' has no values; it will never match.")
-                    tiers[tier_name] = Tier(tier_name, [], partition=partition, blind=blind)
-                    continue
-
-                # Validate / build regex behavior
-                if len(values) == 1:
-                    user_regex = values[0]
-                    try:
-                        re.compile(user_regex)
-                    except re.error as e:
-                        logger.error(f"Tier '{tier_name}': invalid regex {user_regex!r} — {e}")
-                        continue
-                    logger.info(f"Tier '{tier_name}' using user regex {user_regex!r}")
-                    tier_obj = Tier(tier_name, [user_regex], partition=partition, blind=blind)
-                else:
-                    logger.info(f"Tier '{tier_name}' using {len(values)} literal values.")
-                    tier_obj = Tier(tier_name, values, partition=partition, blind=blind)
-
+                tier_obj = Tier(tier_name, values)
                 tiers[tier_name] = tier_obj
 
-                if partition:
-                    logger.info(f"Tier '{tier_name}' marked as partition level.")
-                if blind:
-                    logger.info(f"Tier '{tier_name}' marked as blind column.")
-
             except Exception as e:
-                logger.error(f"Failed to parse tier '{tier_name}': {e}")
+                logger.error(f"Failed to parse tier '{raw_name}': {e}")
 
         if not tiers:
             logger.warning("No valid tiers created — using default tiers.")
-            tiers = self.default_tiers()
+            return self.default_tiers()
 
         logger.info(f"Finished parsing tiers. Total: {len(tiers)}")
         return tiers
 
     def _init_tiers(self):
-        """
-        Initializes tiers based on configuration.
-
-        Args:
-            config (dict): Configuration dictionary containing tier names and optional regex patterns.
-        """
-        tier_config = self.OM.config.get("tiers", {})
-        if not tier_config:
-            logger.warning("No configuration provided for TierManager.")
+        """Initialize tiers once, using the config's `tiers` -> `values` logic."""
+        if self.OM is None:
+            logger.warning("TierManager initialized without OM; using default tiers.")
+            self.tiers = self.default_tiers()
             return
 
-        try:
-            tiers = self.read_tiers(tier_config)
-            self.tiers = tiers
-        except Exception as e:
-            logger.error(f"Error reading tiers: {e}")
-            return {}
+        tier_config = self.OM.config.get("tiers", {})
+        self.tiers = self.read_tiers(tier_config)
+        logger.info(f"Tiers: {[(t.name, t.search_str) for t in self.tiers.values()]}")
 
-        for tier_name in tier_config:
-            try:
-                tier_name = self.OM.db.sanitize_column_name(tier_name)
-                new_tier = Tier(tier_name, tier_config[tier_name]["partition"], tier_config[tier_name]["regex"])
-                self.tiers[tier_name] = new_tier
-
-            except ValueError as e:
-                logger.error(f"Skipping Tier '{tier_name}' due to invalid regex: {e}")
-                continue
-
-        logger.info(f"Tiers: {[(t.name, t.partition, t.search_str) for t in self.tiers.values()]}")
-    
     def get_tier_names(self):
-        """Returns list of tier names."""
         return list(self.tiers.keys())
 
-    def get_partition_tiers(self):
-        """
-        Retrieves partitioning tiers.
+    def match_tiers(self, text: str):
+        return {tier.name: tier.match(text) for tier in self.tiers.values()}
 
-        Returns:
-            list: List of Tier names used for partitioning.
-        """
-        return [tier.name for tier in self.tiers.values() if tier.partition]
-
-    def match_tiers(self, text):
-        """
-        Applies all tiers to the given text.
-
-        Args:
-            text (str): The text to be analyzed.
-
-        Returns:
-            dict: Mapping of tier names to their matched values.
-        """
-        results = {}
-        for tier in self.tiers.values():
-            results[tier.name] = tier.match(text)
-        return results
-
-    def make_tier(self, tier_name, partition=False, search_str=None):
-        if tier_name not in self.tiers.keys():
-            tier_name = self.OM.db.sanitize_column_name(tier_name)
-            new_tier = Tier(tier_name, partition, search_str)
-            logger.info(f"Added Tier '{tier_name}' partition: {partition}")
-            return new_tier
-        else:
+    def make_tier(self, tier_name: str, values: Optional[Union[str, List[str]]] = None):
+        tier_name = self.OM.db.sanitize_column_name(tier_name) if self.OM else tier_name
+        if tier_name in self.tiers:
             logger.warning(f"Tier {tier_name} already exists.")
+            return self.tiers[tier_name]
+
+        new_tier = Tier(tier_name, values)
+        self.tiers[tier_name] = new_tier
+        logger.info(f"Added Tier '{tier_name}' with search_str={new_tier.search_str!r}")
+        return new_tier
