@@ -10,7 +10,11 @@ from zss import simple_distance, Node
 from dendropy import Tree, TaxonNamespace
 from dendropy.calculate import treecompare
 from alastr.analyses.morphology import analyze_spacy_features
-from alastr.backend.eda.visualization import make_spacy_dep_pdfs
+from PyPDF2 import PdfMerger
+from tempfile import NamedTemporaryFile
+from spacy import displacy
+from reportlab.graphics import renderPDF
+from svglib.svglib import svg2rlg
 
 
 def compute_tree_height(token):
@@ -294,6 +298,68 @@ def analyze_syntactic_trees(doc):
 
     logger.info(f"Syntactic tree analysis completed.")
     return func_data
+
+def make_spacy_dep_pdfs(doc, doc_id: str, path: str):
+    """
+    Generate and merge dependency tree PDFs for all sentences in a SpaCy Doc.
+
+    Args:
+        doc (spacy.tokens.Doc): Parsed document with sentence boundaries.
+        doc_id (str): Unique ID to name the merged PDF file.
+        path (str): Output directory for dependency tree PDFs.
+
+    Notes:
+        - Uses SpaCy displaCy visualizer.
+        - Uses svglib + reportlab for SVG -> PDF conversion.
+        - Merges all sentence PDFs into one per document.
+    """
+    NLP = NLPmodel()
+    nlp = NLP.get_nlp()
+    os.makedirs(path, exist_ok=True)
+
+    logger.info(f"Generating dependency tree PDF for doc: {doc_id}")
+    
+    pdf_paths = []
+
+    for i, sent in enumerate(doc.sents, 1):
+        subdoc = nlp(sent.text)
+        svg = displacy.render(subdoc, style="dep", page=False, jupyter=False)
+
+        try:
+            with NamedTemporaryFile(delete=False, suffix=".svg") as tmp_svg:
+                tmp_svg_path = tmp_svg.name
+                tmp_svg.write(svg.encode("utf-8"))
+
+            drawing = svg2rlg(tmp_svg_path)
+            tmp_pdf_path = NamedTemporaryFile(delete=False, suffix=".pdf").name
+            renderPDF.drawToFile(drawing, tmp_pdf_path)
+            pdf_paths.append(tmp_pdf_path)
+
+        except Exception as e:
+            logger.error(f"Failed to render dep tree for sentence {i}: {e}")
+        finally:
+            try:
+                os.remove(tmp_svg_path)
+            except Exception as cleanup_err:
+                logger.warning(f"Could not delete temp SVG: {cleanup_err}")
+
+    # Merge all per-sentence PDFs
+    if pdf_paths:
+        merged_path = os.path.join(path, f"doc_{doc_id}_dep_trees.pdf")
+        merger = PdfMerger()
+        for pdf in pdf_paths:
+            merger.append(pdf)
+        merger.write(merged_path)
+        merger.close()
+
+        logger.info(f"Merged dependency tree PDF saved: {merged_path}")
+
+        # Cleanup temp PDFs
+        for pdf in pdf_paths:
+            try:
+                os.remove(pdf)
+            except Exception as e:
+                logger.warning(f"Could not delete temp PDF: {e}")
 
 def analyze_syntax(PM, sample_data):
 

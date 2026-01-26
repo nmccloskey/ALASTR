@@ -7,10 +7,8 @@ logger = logging.getLogger("CustomLogger")
 from alastr.backend.tools.logger import logger, _rel
 from alastr.backend.tools.auxiliary import project_path, as_path, find_config_file, load_config, find_files
 from alastr.backend.tools.Tier import TierManager
-from alastr.backend.eda.EDADaemon import EDADaemon
 from alastr.backend.etl.SQLDaemon import SQLDaemon
 from alastr.backend.etl.Table import Table
-from alastr.backend.eda.visualization import visualize_distinctive_features, generate_corr_maps, generate_data_heatmaps
 
 
 class OutputManager:
@@ -32,7 +30,6 @@ class OutputManager:
             cls._instance._init_db()
             cls._instance.db = SQLDaemon(cls._instance)
             cls._instance.tm = TierManager(cls._instance)
-            cls._instance.eda = EDADaemon(cls._instance)
 
             logger.info("OutputManager initialized successfully.")
         return cls._instance
@@ -297,16 +294,3 @@ class OutputManager:
                     section: str, agg_pks=["group_id"], agg_subdir="aggregated"):
         """Calls EDADaemon to aggregate data."""
         self.eda.aggregate_data(df, group_by, base_table_name, section, agg_pks, agg_subdir)
-
-    def run_group_comparison(self, df: pd.DataFrame, group_by: list, base_table_name: str,
-                    section: str, gcomp_pks=["group_id"], gcomp_subdir="group_comps"):
-        """Calls EDADaemon to compare groups."""
-        self.eda.compare_groups(df, group_by, base_table_name, section, gcomp_pks, gcomp_subdir)
-
-    def generate_visuals(self, section):
-        """Calls visualization functions."""
-        ## PATCH
-        if self.compare_groups and self.comparison_cols:
-            visualize_distinctive_features(self, section, self.comparison_cols)
-        generate_corr_maps(self, section)
-        generate_data_heatmaps(self, section)
