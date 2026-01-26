@@ -280,23 +280,7 @@ def compute_ngrams(
         logger.info(f"compute_ngrams: PM.ngrams={max_n} < 1. Nothing to do.")
         return summary_data, ngram_data
 
-    # Determine starting ID
-    try:
-        if gran == "doc":
-            start_id = int(PM.ngram_id_doc)
-        else:
-            start_id = int(PM.ngram_id_sent)
-    except Exception:
-        logger.exception("compute_ngrams: PM.ngram_id_doc/sent missing/invalid. Returning empty.")
-        return summary_data, ngram_data
-
-    current_ngram_id = start_id
     summary_row = row_base.copy()
-
-    logger.debug(
-        f"compute_ngrams: start gran={gran} prefix={prefix} doc_id={doc_id} sent_id={sent_id} "
-        f"len(sequence)={len(sequence)} max_n={max_n} start_id={start_id}"
-    )
 
     # Empty sequence => still return a summary row (with zeros) if you want;
     # Here we return a summary with no n-metrics but log explicitly.
@@ -308,7 +292,6 @@ def compute_ngrams(
     # ----------------------------
     # Main computation
     # ----------------------------
-    total_records_written = 0
 
     for n in range(1, max_n + 1):
         try:
@@ -361,7 +344,6 @@ def compute_ngrams(
             for rank, (ngram, count) in enumerate(ngram_counts.most_common(), start=1):
                 row_data = row_base.copy()
                 row_data.update({
-                    "ngram_id": current_ngram_id,
                     "n": n,
                     "ngram": "_".join(ngram),
                     "rank": rank,
@@ -374,19 +356,9 @@ def compute_ngrams(
                 row_data.update(disp)
 
                 records.append(row_data)
-                current_ngram_id += 1
 
             # SAFER accumulation (prevents overwrite if same table_name is hit twice)
             ngram_data.setdefault(table_name, []).extend(records)
-
-            total_records_written += len(records)
-
-            logger.debug(
-                f"compute_ngrams: wrote table={table_name} n={n} rows={len(records)} "
-                f"(unique={unique_ngrams}, total={total_ngrams}) "
-                f"id_range=[{current_ngram_id - len(records)}, {current_ngram_id - 1}] "
-                f"doc_id={doc_id} gran={gran}"
-            )
 
         except Exception:
             logger.exception(
@@ -397,22 +369,8 @@ def compute_ngrams(
     # Insert summary row
     summary_data[f"{prefix}_ngram_summary"] = summary_row
 
-    # ----------------------------
-    # FIXED ngram_id update
-    # ----------------------------
-    # current_ngram_id is the *next available* ID after writing records.
-    # Set PM.ngram_id_* to this value.
-    try:
-        if gran == "doc":
-            PM.ngram_id_doc = current_ngram_id
-        else:
-            PM.ngram_id_sent = current_ngram_id
-    except Exception:
-        logger.exception("compute_ngrams: failed to update PM.ngram_id_doc/sent.")
-
     logger.info(
         f"compute_ngrams: done prefix={prefix} gran={gran} doc_id={doc_id} "
-        f"records_written={total_records_written} start_id={start_id} next_id={current_ngram_id}"
     )
 
-    return summary_data, ngram_data, current_ngram_id
+    return summary_data, ngram_data
