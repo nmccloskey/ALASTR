@@ -64,9 +64,6 @@ def main():
             
             for table_name in results:
                 OM.tables[table_name].export_to_excel()            
-            
-            if OM.aggregate:
-                OM.run_aggregate_analyses(results, section)
 
     except Exception as e:
         logger.error(f"Pipeline failed: {e}")

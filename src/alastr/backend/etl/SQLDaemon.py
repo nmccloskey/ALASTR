@@ -176,7 +176,7 @@ class SQLDaemon:
                 if col not in existing_columns
             }
             for column, data_type in new_columns.items():
-                logger.info(f'Adding new column to "{table_name}": {column} {data_type}')
+                # logger.info(f'Adding new column to "{table_name}": {column} {data_type}')
                 cursor.execute(f'ALTER TABLE "{table_name}" ADD COLUMN "{column}" {data_type}')
 
             # ============================================================
