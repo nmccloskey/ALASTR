@@ -14,7 +14,7 @@ add_src_to_sys_path()
 from src.alastr.main import main as run_alastr_pipeline
 
 st.set_page_config(page_title="ALASTR Web App", layout="wide")
-st.title("🧠 ALASTR Web App: Comprehensive Linguistic Analysis of Text for Research")
+st.title("ALASTR Web App: Aggregate Linguistic Analysis of Speech Transcripts for Research")
 
 if "confirmed_config" not in st.session_state:
     st.session_state.confirmed_config = False

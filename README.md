@@ -1,4 +1,4 @@
-# ALASTR – Aphasiological Language Analysis of Speech Transcripts for Research
+# ALASTR – Aggregate Linguistic Analysis of Speech Transcripts for Research
 
 **Status:** Active development (early-stage).  
 **Stability:** APIs, module layout, and CLI interfaces are subject to change.  

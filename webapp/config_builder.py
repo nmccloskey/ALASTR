@@ -5,7 +5,7 @@ import sys
 import tempfile
 import zipfile
 from io import BytesIO
-from config_builder import build_config_ui  # Make sure this supports ALASTR's schema
+from config_builder import build_config_ui
 
 def add_src_to_sys_path():
     sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))

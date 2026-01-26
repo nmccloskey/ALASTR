@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "alastr"
 version = "0.0.1"
-description = "Aphasiological Language Analysis of Speech Transcripts for Research"
+description = "Aggregate Linguistic Analysis of Speech Transcripts for Research"
 readme = "README.md"
 requires-python = ">=3.12"
 license = { text = "MIT" }
