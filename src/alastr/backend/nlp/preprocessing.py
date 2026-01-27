@@ -71,7 +71,7 @@ def process_sample_data(PM, sample_data):
             raise ValueError(f"Expected 'text' to be a string, but got {type(sample_data['text'])}")
 
         doc_id = sample_data["doc_id"]
-        is_cha = sample_data["doc_label"].endswith(".cha")
+        is_cha = sample_data["doc_label"].endswith(".cha") ###U or transcript table derived
 
         results = PM.sections["preprocessing"].init_results_dict()
        
@@ -159,7 +159,7 @@ def read_spreadsheet(file_path, file_name, doc_id, OM):
     other_columns = [col for col in df.columns if col != "text"]
     new_tiers = [OM.tm.make_tier(col) for col in other_columns]
     OM.tm.tiers.update({tier.name: tier for tier in new_tiers if tier})
-    logger.info(f"TierManager's tiers: {[(t.name, t.partition) for t in OM.tm.tiers.values()]}")
+    logger.info(f"TierManager's tiers: {[(t.name) for t in OM.tm.tiers.values()]}")
 
     df.insert(0, "doc_label", file_name + "|" + df[other_columns].astype(str).agg("|".join, axis=1) + "|" + df.index.astype(str))
     df.insert(0, "doc_id", range(doc_id, doc_id + len(df)))
@@ -228,10 +228,10 @@ def preprocess_text(PM) -> list:
     doc_id = 1
     doc_ids = []
     allowed_extensions = {".cha", ".txt", ".docx", ".csv", ".xlsx"}
+
     file_paths = [f for f in Path(OM.input_dir).rglob("*") if f.suffix.lower() in allowed_extensions and f.is_file()]
-    # logger.info(f"Paths: {file_paths}")
     file_names = [str(os.path.basename(f)) for f in file_paths]
-    # logger.info(f"Names: {file_names}")
+
     logger.info(f"Found {len(file_paths)} files in '{OM.input_dir}'. Processing started...")
     progress_bar = tqdm(zip(file_names, file_paths), desc="Reading Files", dynamic_ncols=True)
 
