@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 from tqdm import tqdm
 from pathlib import Path
 from alastr.backend.nlp.NLPmodel import NLPmodel
@@ -8,6 +7,7 @@ from alastr.backend.etl.OutputManager import OutputManager
 from alastr.backend.nlp.data_processing import clean_text, get_two_cha_versions
 from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.sample_prep import prep_samples
+from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 
 def process_sents(doc, sample_data, is_cha=False):
@@ -51,6 +51,7 @@ def process_sents(doc, sample_data, is_cha=False):
             cleaned_phon_doc += " " + cleaned_phon
 
     return sent_data_results, sent_text_results, cleaned_doc.strip(), semantic_doc.strip(), cleaned_phon_doc.strip()
+
 
 def process_sample_data(PM, sample_data):
     """
@@ -118,72 +119,126 @@ def process_sample_data(PM, sample_data):
         return {}
 
 
-def preprocess_text(PM) -> list:
+def preprocess_text(PM) -> list[int]:
     """
-    Reads, processes, and stores text docs from various file formats.
+    Read, process, and store text docs from various file formats.
 
-    This function extracts text from multiple file formats, processes each doc 
-    incrementally, assigns doc IDs, and updates the database.
+    Supported formats
+    -----------------
+    - .cha    (CHAT)      -> read_chat_file(...)
+    - .txt/.docx          -> read_text_file/read_docx_file
+    - .csv/.xlsx          -> read_spreadsheet
+    - transcript_table*.xlsx -> read_transcript_table (multi-sample)
 
-    Supported Formats:
-    - `.cha` (CHAT files) → Uses `pylangacq` for transcription.
-    - `.txt` and `.docx` → Reads raw text.
-    - `.csv` and `.xlsx` → Must contain 'label' and 'text' columns.
+    Notes
+    -----
+    - `speaking_time` is treated as metadata, not a tier (handled downstream).
+    - doc_id increments per *sample record* (not per file), so multi-sample inputs
+      consume multiple IDs.
 
-    Returns:
-        list: A list of assigned doc IDs.
-    
-    Raises:
-        FileNotFoundError: If `input_dir` does not exist.
-        ValueError: If file format is unsupported.
+    Returns
+    -------
+    list[int]
+        Doc IDs successfully stored.
+
+    Raises
+    ------
+    FileNotFoundError
+        If OM.input_dir does not exist.
     """
     OM = OutputManager()
 
-    if not os.path.isdir(OM.input_dir):
-        raise FileNotFoundError(f"Input directory '{OM.input_dir}' does not exist.")
+    input_dir = Path(OM.input_dir)
+    if not input_dir.exists() or not input_dir.is_dir():
+        raise FileNotFoundError(f"Input directory does not exist or is not a directory: {input_dir}")
 
     exclude_speakers = OM.config.get("exclude_speakers", ["INV"])
-    
+
+    # Initialize/ensure raw tables exist before processing any docs
     PM.sections["preprocessing"].create_raw_data_tables()
 
-    doc_id = 1
-    doc_ids = []
-    allowed_extensions = {".cha", ".txt", ".docx", ".csv", ".xlsx"}
+    allowed_extensions: Set[str] = {".cha", ".txt", ".docx", ".csv", ".xlsx"}
 
-    file_paths = [f for f in Path(OM.input_dir).rglob("*") if f.suffix.lower() in allowed_extensions and f.is_file()]
-    file_names = [str(os.path.basename(f)) for f in file_paths]
+    file_paths = sorted(
+        [
+            p for p in input_dir.rglob("*")
+            if p.is_file() and p.suffix.lower() in allowed_extensions
+        ],
+        key=lambda p: (p.suffix.lower(), str(p).lower()),
+    )
 
-    logger.info(f"Found {len(file_paths)} files in '{OM.input_dir}'. Processing started...")
-    progress_bar = tqdm(zip(file_names, file_paths), desc="Reading Files", dynamic_ncols=True)
+    logger.info("Found %d files in %s. Processing started...", len(file_paths), input_dir)
 
-    for file_name, file_path in progress_bar:
+    doc_ids: List[int] = []
+    next_doc_id = 1
+
+    progress_bar = tqdm(file_paths, desc="Reading Files", dynamic_ncols=True)
+
+    for file_path in progress_bar:
+        file_name = file_path.name
         progress_bar.set_description(f"Processing {file_name}")
-        logger.info(f"name: {file_name}, path: {file_path}")
+        logger.info("Processing file: name=%s path=%s", file_name, file_path)
 
         try:
-            samples = prep_samples(file_name, file_path, doc_id, exclude_speakers, OM)
-                
-            for sample_data in samples:
-                process_str = f"Processing sample {sample_data['doc_id']}: {sample_data['doc_label']}"
-                progress_bar.set_description(process_str)
-                logger.info(process_str)
+            # Important: prep_samples expects a string path or Path? Your refactor uses Path
+            # internally; keeping Path is fine as long as readers accept it (pandas does).
+            samples = prep_samples(
+                file_name=file_name,
+                file_path=str(file_path),   # safer if some readers still expect str
+                doc_id=next_doc_id,
+                exclude_speakers=exclude_speakers,
+                OM=OM,
+            )
 
-                results = process_sample_data(PM, sample_data)
+            if not samples:
+                logger.warning("No samples produced for file %s (skipping).", file_name)
+                continue
+
+            for sample_data in samples:
+                # Defensive checks to fail loudly *inside* the file try/except
+                if "doc_id" not in sample_data or "doc_label" not in sample_data or "text" not in sample_data:
+                    raise ValueError(
+                        f"Sample record missing required keys (doc_id/doc_label/text). "
+                        f"Got keys={list(sample_data.keys())} from file {file_name}"
+                    )
+
+                msg = f"Processing sample {sample_data['doc_id']}: {sample_data['doc_label']}"
+                progress_bar.set_description(msg)
+                logger.info(msg)
+
+                results: Dict[str, Any] = process_sample_data(PM, sample_data)
+
+                if not isinstance(results, dict):
+                    raise TypeError(
+                        f"process_sample_data must return dict[table_name, data]. Got {type(results)}"
+                    )
 
                 for table_name, data in results.items():
+                    if table_name not in OM.tables:
+                        raise KeyError(
+                            f"process_sample_data returned unknown table {table_name!r}. "
+                            f"Known tables: {list(OM.tables.keys())}"
+                        )
                     OM.tables[table_name].update_data(data)
 
-                doc_ids.append(sample_data["doc_id"])
-                doc_id += 1
+                doc_ids.append(int(sample_data["doc_id"]))
 
-        except Exception as e:
-            logger.error(f"Error processing file '{file_name}': {e}")
+                # doc_id increments per sample, not per file
+                next_doc_id += 1
 
-    num_docs = len(doc_ids)
-    OM.num_docs = num_docs
-    logger.info(f"Processing completed. {num_docs} docs stored.")
+        except Exception:
+            # logs full traceback; keep going to next file
+            logger.exception("Error processing file %s (%s). Skipping.", file_name, file_path)
+            continue
 
-    for table_name in results:
-        OM.tables[table_name].export_to_excel()
-    
+    OM.num_docs = len(doc_ids)
+    logger.info("Processing completed. %d docs stored.", OM.num_docs)
+
+    # Export: deterministic and not dependent on `results` from the last iteration
+    for table_name, table in OM.tables.items():
+        try:
+            table.export_to_excel()
+        except Exception:
+            logger.exception("Failed exporting table %s to Excel.", table_name)
+
     return doc_ids
