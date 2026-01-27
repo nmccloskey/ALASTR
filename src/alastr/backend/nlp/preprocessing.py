@@ -74,7 +74,7 @@ def process_sample_data(PM, sample_data):
             raise ValueError(f"Expected 'text' to be a string, but got {type(sample_data['text'])}")
 
         doc_id = sample_data["doc_id"]
-        is_cha = sample_data["doc_label"].endswith(".cha") ###U or transcript table derived
+        is_cha = sample_data["doc_label"].endswith(".cha")
 
         results = PM.sections["preprocessing"].init_results_dict()
        
@@ -272,12 +272,12 @@ def read_transcript_table(
     utterances = (
         utt_df.groupby("sample_id", as_index=False)["utterance"]
         .agg(lambda s: " ".join(x for x in s if x))
-        .rename(columns={"utterance": "utterance"})
+        .rename(columns={"utterance": "text"})
     )
 
     # Left join so samples with no remaining utterances still survive
     merged = in_samples.merge(utterances, on="sample_id", how="left")
-    merged["utterance"] = merged["utterance"].fillna("")
+    merged["text"] = merged["text"].fillna("")
 
     # 6) Return list-of-dicts records
     return merged.to_dict(orient="records")
