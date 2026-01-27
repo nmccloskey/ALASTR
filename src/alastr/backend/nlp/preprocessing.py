@@ -7,7 +7,7 @@ from alastr.backend.etl.OutputManager import OutputManager
 from alastr.backend.nlp.data_processing import clean_text, get_two_cha_versions
 from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.sample_prep import prep_samples
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
+from typing import Any, Dict, List, Sequence, Set, Tuple
 
 
 def process_sents(doc, sample_data, is_cha=False):
@@ -137,8 +137,7 @@ def _process_one_input_file(
     logger.info("Processing file: name=%s path=%s", file_name, file_path)
 
     samples = prep_samples(
-        file_name=file_name,
-        file_path=file_path,          # Path now
+        file_path=file_path,
         doc_id=next_doc_id,
         exclude_speakers=exclude_speakers,
         OM=OM,

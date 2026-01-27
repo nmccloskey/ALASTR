@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+from pathlib import Path
 import pandas as pd
 import docx2txt as dx
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -11,23 +11,23 @@ from alastr.backend.tools.logger import logger
 # Text file readers
 # -------------------------
 
-def read_chat_file(file_path: str, exclude_speakers: list) -> dict:
+def read_chat_file(file_path: Path, exclude_speakers: list) -> str:
     text_content = get_text_from_cha(file_path, exclude_speakers)
     logger.info(f"Processed CHAT file: {file_path}")
     return text_content
 
-def read_text_file(file_path: str) -> str:
+def read_text_file(file_path: Path) -> str:
     with open(file_path, "r", encoding="utf-8", errors="replace") as file:
         text_content = file.read()
         text_content = scrub_raw_text(text_content)
         logger.info(f"Processed TXT file: {file_path}")
-        return text_content #.replace('\n',' ')
+        return text_content
 
-def read_docx_file(file_path: str) -> str:
+def read_docx_file(file_path: Path) -> str:
     text_content = dx.process(file_path)
     text_content = scrub_raw_text(text_content)
     logger.info(f"Processed DOCX file: {file_path}")
-    return text_content #.replace('\n',' ')
+    return text_content
 
 
 # -------------------------
@@ -40,16 +40,17 @@ def _require_columns(df: pd.DataFrame, required: Iterable[str], context: str) ->
         raise ValueError(f"{context} missing required column(s): {missing}")
 
 
-def _read_tabular(file_path: str, file_name: str) -> pd.DataFrame:
+def _read_tabular(file_path: Path) -> pd.DataFrame:
     try:
-        if file_name.lower().endswith(".xlsx"):
+        suffix = file_path.suffix.lower()
+        if suffix == ".xlsx":
             return pd.read_excel(file_path)
-        if file_name.lower().endswith(".csv"):
+        if suffix == ".csv":
             return pd.read_csv(file_path)
     except Exception as e:
         raise RuntimeError(f"Failed reading tabular file: {file_path!r}") from e
 
-    raise ValueError(f"Unsupported tabular extension for read_spreadsheet: {file_name!r}")
+    raise ValueError(f"Unsupported tabular extension: {file_path.suffix!r}")
 
 
 def _update_tiers_from_df(df: pd.DataFrame, OM: Any, non_tier_cols: Set[str]) -> None:
@@ -99,41 +100,40 @@ def _insert_doc_label(df: pd.DataFrame, label_series: pd.Series) -> pd.DataFrame
 # Spreadsheet importer
 # -------------------------
 
-def read_spreadsheet(file_path: str, file_name: str, doc_id: int, OM: Any) -> List[Dict[str, Any]]:
+def read_spreadsheet(file_path: Path, doc_id: int, OM: Any) -> List[Dict[str, Any]]:
     """
     Read a spreadsheet (.xlsx or .csv) with a required 'text' column and optional tier columns.
     'speaking_time' is allowed but is never treated as a tier.
     """
-    df = _read_tabular(file_path, file_name)
+    df = _read_tabular(file_path)
 
     if df.empty:
-        raise ValueError(f"{file_name} contains no rows.")
+        raise ValueError(f"{file_path.name} contains no rows.")
 
-    _require_columns(df, required=["text"], context=f"{file_name} (spreadsheet)")
+    _require_columns(df, required=["text"], context=f"{file_path.name} (spreadsheet)")
 
     # Drop rows with missing text early so doc_id + labels map to actual docs
     df = df.dropna(subset=["text"]).copy()
     if df.empty:
-        raise ValueError(f"{file_name} contains no valid 'text' entries after dropping NA.")
+        raise ValueError(f"{file_path.name} contains no valid 'text' entries after dropping NA.")
 
     # Update tiers from all non-text columns, excluding speaking_time as well
     non_tier_cols = {"text", "speaking_time"}
     _update_tiers_from_df(df, OM, non_tier_cols=non_tier_cols)
 
     # Build doc_label: <file_name>|<all non-text cols joined>|<row_index>
-    file_name_only = os.path.basename(file_name) if file_name else os.path.basename(file_path)
     other_columns = [c for c in df.columns if c != "text"]
     if other_columns:
         meta_part = df[other_columns].astype(str).agg("|".join, axis=1)
-        label_series = file_name_only + "|" + meta_part + "|" + df.index.astype(str)
+        label_series = file_path.name + "|" + meta_part + "|" + df.index.astype(str)
     else:
-        label_series = file_name_only + "|" + df.index.astype(str)
+        label_series = file_path.name + "|" + df.index.astype(str)
 
     df = _insert_doc_label(df, label_series)
     df, _next_doc_id = _insert_doc_ids(df, doc_id)
 
     records = df.to_dict(orient="records")
-    logger.info("Processed %d rows from file: %s", len(records), file_name_only)
+    logger.info("Processed %d rows from file: %s", len(records), file_path.name)
     return records
 
 
@@ -141,7 +141,7 @@ def read_spreadsheet(file_path: str, file_name: str, doc_id: int, OM: Any) -> Li
 # Transcript-table importer (RASCAL -> ALASTR)
 # -------------------------
 
-def _read_transcript_sheets(file_path: str) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def _read_transcript_sheets(file_path: Path) -> Tuple[pd.DataFrame, pd.DataFrame]:
     try:
         in_samples = pd.read_excel(file_path, sheet_name="samples")
         in_utterances = pd.read_excel(file_path, sheet_name="utterances")
@@ -176,8 +176,7 @@ def _concat_utterances(
 
 
 def read_transcript_table(
-    file_path: str,
-    file_name: str,
+    file_path: Path,
     doc_id: int,
     exclude_speakers: Optional[Sequence[str]],
     OM: Any,
@@ -201,11 +200,10 @@ def read_transcript_table(
     non_tier_cols = {"sample_id", "file", "speaking_time"}
     _update_tiers_from_df(in_samples, OM, non_tier_cols=non_tier_cols)
 
-    file_name_only = os.path.basename(file_name) if file_name else os.path.basename(file_path)
     base = in_samples.copy()
 
     # doc_label = <transcript_table_filename>|<original_chat_filename>
-    base = _insert_doc_label(base, file_name_only + "|" + base["file"].astype(str))
+    base = _insert_doc_label(base, file_path.name + "|" + base["file"].astype(str))
 
     base, _next_doc_id = _insert_doc_ids(base, doc_id)
 
@@ -221,34 +219,42 @@ def read_transcript_table(
 # Dispatcher
 # -------------------------
 
-def prep_samples(file_name: str, file_path: str, doc_id: int, exclude_speakers, OM) -> List[Dict[str, Any]]:
-    file_lower = file_name.lower()
+def prep_samples(
+    file_path: Path,
+    doc_id: int,
+    exclude_speakers,
+    OM,
+) -> List[Dict[str, Any]]:
+    
+    name = file_path.name
+    suffix = file_path.suffix.lower()
+    name_lower = name.lower()
 
-    if not file_lower.endswith((".xlsx", ".cha", ".txt", ".docx", ".csv")):
-        logger.warning("Unsupported file format: %s. Skipping.", file_name)
+    if suffix not in {".xlsx", ".cha", ".txt", ".docx", ".csv"}:
+        logger.warning("Unsupported file format: %s. Skipping.", name)
         return []
 
-    if "transcript_table" in file_lower and file_lower.endswith(".xlsx"):
-        return read_transcript_table(file_path, file_name, doc_id, exclude_speakers, OM)
+    if suffix == ".xlsx" and "transcript_table" in name_lower:
+        return read_transcript_table(file_path, doc_id, exclude_speakers, OM)
 
-    if file_lower.endswith((".xlsx", ".csv")):
-        return read_spreadsheet(file_path, file_name, doc_id, OM)
+    if suffix in {".xlsx", ".csv"}:
+        return read_spreadsheet(file_path, doc_id, OM)
 
     # Non-tabular single-doc inputs
-    if file_lower.endswith(".cha"):
+    if suffix == ".cha":
         text_content = read_chat_file(file_path, exclude_speakers)
-    elif file_lower.endswith(".txt"):
+    elif suffix == ".txt":
         text_content = read_text_file(file_path)
-    elif file_lower.endswith(".docx"):
+    elif suffix == ".docx":
         text_content = read_docx_file(file_path)
     else:
-        logger.warning("Unsupported file type after filtering: %s", file_name)
+        logger.warning("Unsupported file type after filtering: %s", name)
         return []
 
     sample_data = {
         "doc_id": doc_id,
-        "doc_label": os.path.basename(file_name),
+        "doc_label": name,
         "text": text_content,
-        **OM.tm.match_tiers(file_name),
+        **OM.tm.match_tiers(name),
     }
     return [sample_data]
