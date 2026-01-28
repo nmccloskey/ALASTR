@@ -16,7 +16,7 @@ from typing import Callable, Dict, Iterable, List, Optional, Set, Tuple
 
 # ---- Import subsection functions (one per analysis unit) ----
 # Preprocessing
-from alastr.analyses.preprocessing.preprocess_text import preprocess_text
+from alastr.backend.nlp.preprocessing import preprocess_text
 
 # Lexicon subsections
 from alastr.analyses.lexicon.frequencies import analyze_frequencies
