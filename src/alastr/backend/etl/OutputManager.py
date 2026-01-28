@@ -2,8 +2,6 @@ import yaml
 from pathlib import Path
 import pandas as pd
 from datetime import datetime
-import logging
-logger = logging.getLogger("CustomLogger")
 from alastr.backend.tools.logger import logger, _rel
 from alastr.backend.tools.auxiliary import project_path, as_path, find_config_file, load_config, find_files
 from alastr.backend.tools.Tier import TierManager
@@ -103,78 +101,8 @@ class OutputManager:
         df = self.db.access_data(table_name, columns, filters)
         return df
     
-    def get_partition_tiers(self):
-        return self.tm.get_partition_tiers()
-
     def sanitize_column_name(self, col_name):
         return self.db.sanitize_column_name(col_name)
-
-    def get_data_with_groupings(self, fact_table: str, dim_table: str, cluster_table: str = None, grouping_cols: list = []) -> pd.DataFrame:
-        """
-        Merges a fact table with a dimension table (and optionally a cluster table)
-        based on common primary keys across all involved tables.
-
-        Args:
-            fact_table (str): Name of the fact table.
-            dim_table (str): Name of the dimension table.
-            cluster_table (str, optional): Name of the cluster table. Defaults to None.
-
-        Returns:
-            pd.DataFrame: Merged DataFrame if successful, otherwise None.
-        """
-        try:
-            if grouping_cols == []:
-                logger.error(f"No grouping columns specified - selecting all.")
-                grouping_cols = '*'
-
-            fact_pks = self.tables[fact_table].get_pks()
-            dim_pks = self.tables[dim_table].get_pks()
-            common_pks = set(fact_pks) & set(dim_pks)
-
-            if cluster_table:
-                cluster_pks = self.tables[cluster_table].get_pks()
-                common_pks &= set(cluster_pks)
-
-            common_pks = list(common_pks)
-
-            if not common_pks:
-                msg = f"Cannot merge - no matching primary keys found between '{fact_table}', '{dim_table}'"
-                if cluster_table:
-                    msg += f", and '{cluster_table}'"
-                logger.error(msg)
-                return None
-
-            if len(common_pks) != len(fact_pks) or len(common_pks) != len(dim_pks):
-                logger.warning(f"Partial PK match detected for merging '{fact_table}' and '{dim_table}'. Using {common_pks}.")
-            if cluster_table and len(common_pks) != len(cluster_pks):
-                logger.warning(f"Partial PK match detected for merging '{fact_table}', '{dim_table}', and '{cluster_table}'. Using {common_pks}.")
-
-            fact_df = self.tables[fact_table].get_data(columns=grouping_cols)
-            dim_df = self.tables[dim_table].get_data()
-
-            merged_df = fact_df
-            if cluster_table:
-                cluster_df = self.tables[cluster_table].get_data()
-                merged_df = merged_df.merge(cluster_df, on=common_pks, how="inner")
-            merged_df = merged_df.merge(dim_df, on=common_pks, how="inner")
-
-            if len(merged_df) != len(fact_df) or len(merged_df) != len(dim_df):
-                logger.warning(f"Row count mismatch after merging '{fact_table}' and '{dim_table}'. "
-                            f"fact_df: {fact_df.shape}, dim_df: {dim_df.shape}, merged: {merged_df.shape}.")
-            if cluster_table and len(merged_df) != len(cluster_df):
-                logger.warning(f"Row count mismatch after merging with '{cluster_table}'. "
-                            f"merged: {merged_df.shape}, cluster_df: {cluster_df.shape}")
-
-            logger.info(f"Final merged DataFrame has shape {merged_df.shape}.")
-            return merged_df
-
-        except KeyError as e:
-            logger.error(f"Table not found: {e}")
-        except AttributeError as e:
-            logger.error(f"Missing expected method or attribute: {e}")
-        except Exception as e:
-            logger.exception(f"Unexpected error during data merging: {e}")
-        return None
 
     def export_sql_to_excel(self, table_name):
         """Exports database tables to Excel."""
@@ -224,52 +152,3 @@ class OutputManager:
         
         logger.info(f"Exported {count} table(s) matching filters: "
                     f"section={section}, family={family}, tags={tags}")
-
-    def run_clustering(self, table_name, section):
-        """Calls EDADaemon to cluster data."""
-        try:
-            df = self.tables[table_name].get_data()
-
-            if df is not None and not df.empty:
-                pk_columns = self.tables[table_name].get_pks()
-                cluster_df = self.eda.run_clustering(df, pk_columns)
-
-            if cluster_df is not None and not cluster_df.empty:
-                cluster_table_name = f"{table_name}_clusters"
-                self.create_table(name=cluster_table_name, sheet_name=table_name,
-                                section=section, subdir=self.tables[table_name].get_subdir(),
-                                file_name= f"{self.tables[table_name].file_base}_clusters.xlsx", 
-                                primary_keys=self.tables[table_name].get_pks())
-                
-                self.tables[cluster_table_name].update_data(cluster_df.to_dict(orient="records"))
-                self.tables[cluster_table_name].export_to_excel()
-        
-        except Exception as e:
-            logger.error(f"OutputManager failed to run clustering: {e}.")
-    
-    def run_aggregate_analyses(self, results, section):
-        for table_name in results:
-            grouping_table_name = "sample_data_sent" if self.tables[table_name].granularity == "sent" else "sample_data_doc"
-            cluster_table_name = f"{table_name}_clusters" if self.cluster else None
-
-            if self.aggregate:
-                logger.info(f"Aggregating data from table '{table_name}'.")
-                grouping_cols = self.aggregation_cols
-                merged_df = self.get_data_with_groupings(
-                    fact_table=grouping_table_name, dim_table=table_name,
-                    cluster_table=cluster_table_name, grouping_cols=grouping_cols)
-                # group_by = self.get_partition_tiers()                
-                self.run_aggregation(merged_df, grouping_cols, table_name, section)
-            
-            if self.compare_groups:
-                logger.info(f"Comparing group data from table '{table_name}'.")
-                grouping_cols = self.comparison_cols
-                merged_df = self.get_data_with_groupings(
-                    fact_table=grouping_table_name, dim_table=table_name,
-                    cluster_table=cluster_table_name, grouping_cols=grouping_cols)                
-                self.run_group_comparison(merged_df, grouping_cols, table_name, section)
-    
-    def run_aggregation(self, df: pd.DataFrame, group_by: list, base_table_name: str,
-                    section: str, agg_pks=["group_id"], agg_subdir="aggregated"):
-        """Calls EDADaemon to aggregate data."""
-        self.eda.aggregate_data(df, group_by, base_table_name, section, agg_pks, agg_subdir)
