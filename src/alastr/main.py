@@ -13,8 +13,8 @@ def main():
     start_time = datetime.now()
     config_path = project_path(as_path("config.yaml"))
 
-    OM = OutputManager()              # assumes OM loads config + sets input/output dirs
-    PM = PipelineManager(OM)          # builds registry + enabled_analysis_ids
+    OM = OutputManager()
+    PM = PipelineManager(OM)
 
     out_dir = OM.output_dir
     initialize_logger(start_time, out_dir, program_name="ALASTR", version=__version__)
@@ -25,7 +25,7 @@ def main():
     logger.info(f"Random seed set to {random_seed}")
 
     try:
-        PM.run()                      # <-- owns the full nested workflow + writing/export
+        PM.run()
     except Exception as e:
         logger.exception(f"Pipeline failed: {e}")
     finally:

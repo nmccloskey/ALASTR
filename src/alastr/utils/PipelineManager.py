@@ -14,54 +14,102 @@ class PipelineManager:
     """
     Orchestrates ALASTR execution using an analysis registry keyed by analysis_id.
 
-    This class is intentionally singleton-ish in your old design, but I recommend
-    you drop the singleton unless you have a very specific reason:
-      - It complicates testing.
-      - It makes multiple runs in one Python process brittle (stale state).
-    If you must keep the singleton, the logic below preserves your pattern.
+    PipelineManager governs:
+      - analysis registry construction
+      - enabled analysis resolution
+      - execution order
+      - orchestration of levels / variants / samples
+      - delegation to IOManager/OutputManager for persistence
+
+    De facto singleton:
+      - Use PipelineManager.get_instance(...) for normal runs
+      - Instantiate directly in tests if needed
     """
 
-    _instance = None
-    _initialized = False
+    _instance: Optional["PipelineManager"] = None
+    _initialized: bool = False
 
-    def __new__(cls, OM):
+    # -------------------------
+    # De facto singleton factory
+    # -------------------------
+
+    @classmethod
+    def get_instance(
+        cls,
+        io_manager,
+        *,
+        ngrams: int = 5,
+        export_after_each_analysis: bool = True,
+        reset: bool = False,
+    ) -> "PipelineManager":
+        """
+        Preferred construction method for normal runs.
+
+        Parameters
+        ----------
+        io_manager:
+            IOManager/OutputManager instance governing config, inputs, outputs.
+        ngrams:
+            Maximum n-gram size for n-gram analyses.
+        export_after_each_analysis:
+            If True, exports after each analysis_id completes.
+        reset:
+            If True, discards any cached instance and creates a new one.
+            Useful for tests and Streamlit reruns.
+        """
+        if reset:
+            cls._instance = None
+            cls._initialized = False
+
         if cls._instance is None:
-            cls._instance = super().__new__(cls)
+            cls._instance = cls(
+                io_manager,
+                ngrams=ngrams,
+                export_after_each_analysis=export_after_each_analysis,
+            )
         return cls._instance
+
+    # -----------------
+    # Construction
+    # -----------------
 
     def __init__(
         self,
-        OM,
+        io_manager,
         ngrams: int = 5,
         export_after_each_analysis: bool = True,
     ):
-        cls = type(self)
-        if cls._initialized:
+        """
+        Notes on guarding:
+        - We only guard *re-initialization* when this object is the cached singleton.
+        - If you instantiate PipelineManager(...) directly in a test, it will fully initialize.
+        """
+        if self.__class__._initialized and self is self.__class__._instance:
             return
 
-        self.om = OM
-        self.cfg = OM.config
+        # --- core references ---
+        self.io = io_manager               # rename to self.om if you keep OM naming
+        self.cfg = io_manager.config
 
-        # Core run controls
+        # --- run controls ---
         self.export_after_each_analysis = export_after_each_analysis
 
-        # If you still use this toggle:
+        # --- levels ---
         self.sentence_level = bool(self.cfg.get("sentence_level", False))
         self.levels: Tuple[Level, ...] = ("doc", "sent") if self.sentence_level else ("doc",)
 
-        # Build registry (all possible analyses)
-        self.registry: Dict[str, AnalysisSpec] = build_section_config(ngrams=ngrams)
-
-        # Resolve enabled analysis_ids based on config.yaml
+        # --- registry + enabled ids ---
+        self.ngrams = int(ngrams)
+        self.registry: Dict[str, "AnalysisSpec"] = build_section_config(ngrams=self.ngrams)
         self.enabled_analysis_ids: Set[str] = resolve_enabled_analyses(self.cfg, self.registry)
 
-        # Track which tables have been created (lazy init)
+        # --- lazy init bookkeeping ---
         self._created_tables: Set[str] = set()
 
-        # Max n-gram
-        self.ngrams = ngrams
-
-        cls._initialized = True
+        # mark singleton state
+        self.__class__._instance = self
+        self.__class__._initialized = True
+        logger.info("PipelineManager initialized successfully.")
 
     # ------------------------
     # Public run entry points

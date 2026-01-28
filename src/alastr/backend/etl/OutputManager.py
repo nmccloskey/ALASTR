@@ -70,6 +70,13 @@ class OutputManager:
         if self.__class__._initialized and self is self.__class__._instance:
             return
 
+        self.config: dict = {}
+        self.input_dir: Path | None = None
+        self.output_root: Path | None = None
+        self.output_dir: Path | None = None
+        self.timestamp: str | None = None
+        self.db_path: Path | None = None
+
         self.num_samples: int = 0
         self.tables: Dict[str, Table] = {}
 
