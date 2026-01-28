@@ -12,24 +12,24 @@ from alastr.backend.etl.SQLDaemon import SQLDaemon
 from alastr.backend.etl.Table import Table
 
 
-class OutputManager:
+class IOManager:
     """
-    OutputManager governs:
+    IOManager governs:
       - config + run directories
       - table registry (Table objects)
       - thin wrappers around SQLDaemon I/O
       - Excel export
 
     Intended control flow:
-      PipelineManager (PM) -> OutputManager (OM) -> SQLDaemon (DB)
+      PipelineManager (PM) -> IOManager (OM) -> SQLDaemon (DB)
 
     "De facto singleton":
-      - Use OutputManager.get_instance(...) for typical program runs
-      - You can still instantiate OutputManager() directly for tests (no global lock-in)
+      - Use IOManager.get_instance(...) for typical program runs
+      - You can still instantiate IOManager() directly for tests (no global lock-in)
         by using reset=True or bypassing get_instance entirely.
     """
 
-    _instance: Optional["OutputManager"] = None
+    _instance: Optional["IOManager"] = None
     _initialized: bool = False
 
     # -------------------------
@@ -43,7 +43,7 @@ class OutputManager:
         *,
         config: Optional[dict] = None,
         reset: bool = False,
-    ) -> "OutputManager":
+    ) -> "IOManager":
         """
         Preferred construction method for normal runs.
 
@@ -90,7 +90,7 @@ class OutputManager:
 
         self.__class__._instance = self
         self.__class__._initialized = True
-        logger.info("OutputManager initialized successfully.")
+        logger.info("IOManager initialized successfully.")
 
     # -----------------
     # Config / paths

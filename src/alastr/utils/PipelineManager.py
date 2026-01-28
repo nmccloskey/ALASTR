@@ -19,7 +19,7 @@ class PipelineManager:
       - enabled analysis resolution
       - execution order
       - orchestration of levels / variants / samples
-      - delegation to IOManager/OutputManager for persistence
+      - delegation to IOManager for persistence
 
     De facto singleton:
       - Use PipelineManager.get_instance(...) for normal runs
@@ -48,7 +48,7 @@ class PipelineManager:
         Parameters
         ----------
         io_manager:
-            IOManager/OutputManager instance governing config, inputs, outputs.
+            IOManager instance governing config, inputs, outputs.
         ngrams:
             Maximum n-gram size for n-gram analyses.
         export_after_each_analysis:
@@ -198,7 +198,7 @@ class PipelineManager:
     def export_section(self, section_id: str) -> None:
         """
         Export the section's workbooks to Excel.
-        Adapt to your OutputManager's export API.
+        Adapt to IOManager's export API.
         """
         if hasattr(self.om, "export_section"):
             self.om.export_section(section_id)
@@ -271,7 +271,7 @@ class PipelineManager:
 
     def _ensure_tables_for_analysis(self, spec: AnalysisSpec) -> None:
         """
-        Lazily create OutputManager tables for this analysis.
+        Lazily create IOManager tables for this analysis.
 
         Policy:
         - Create tables only for the levels this run will execute (intersection done later),
