@@ -2,7 +2,7 @@ from datetime import datetime
 import random
 import numpy as np
 
-from alastr.backend.etl.OutputManager import IOManager
+from alastr.backend.etl.IOManager import IOManager
 from alastr.utils.PipelineManager import PipelineManager
 from alastr.backend.tools.logger import initialize_logger, terminate_logger, logger
 from alastr.backend.tools.auxiliary import project_path, as_path

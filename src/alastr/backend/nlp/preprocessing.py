@@ -3,7 +3,7 @@ from __future__ import annotations
 from tqdm import tqdm
 from pathlib import Path
 from alastr.backend.nlp.NLPmodel import NLPmodel
-from alastr.backend.etl.OutputManager import IOManager
+from alastr.backend.etl.IOManager import IOManager
 from alastr.backend.nlp.data_processing import clean_text, get_two_cha_versions
 from alastr.backend.tools.logger import logger
 from alastr.backend.nlp.sample_prep import prep_samples
