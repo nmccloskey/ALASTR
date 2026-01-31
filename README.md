@@ -1,6 +1,6 @@
 # ALASTR – Aggregate Linguistic Analysis of Speech Transcripts for Research
 
-**Status:** Active development (early-stage).  
+**Status:** Active development (early-stage, version 0.0.1a1).  
 **Stability:** APIs, module layout, and CLI interfaces are subject to change.  
 **Audience:** Researchers and clinicians working with clinical aphasiology and SLP discourse data.
 
@@ -39,12 +39,17 @@ While ALASTR draws on concepts and components piloted in earlier prototypes (e.g
 
 ## Installation (Early Preview)
 
-ALASTR is not yet distributed on PyPI. During early development, you can install it from a local clone:
+From Github:
 
 ```bash
 git clone https://github.com/nmccloskey/ALASTR.git
 cd ALASTR
 pip install -e .
+```
+
+From PyPI:
+```bash
+pip install alastr
 ```
 
 You may wish to create and activate a dedicated virtual environment or conda environment before installing.

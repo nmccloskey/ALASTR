@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "alastr"
-version = "0.0.1"
+version = "0.0.1a1"
 description = "Aggregate Linguistic Analysis of Speech Transcripts for Research"
 readme = "README.md"
 requires-python = ">=3.12"
